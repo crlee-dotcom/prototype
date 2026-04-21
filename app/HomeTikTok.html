@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Rizz · Home — Reels</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script>if (location.hash === '#embed') document.documentElement.setAttribute('data-embed','1');</script>
+<style>
+  html[data-embed="1"] body { background: transparent !important; margin: 0 !important; padding: 0 !important; }
+  html[data-embed="1"] .page { padding: 0 !important; min-height: 0 !important; gap: 0 !important; }
+  html[data-embed="1"] .page > *:not(.phone) { display: none !important; }
+
+  html, body { margin: 0; padding: 0; background: #0E0E10; font-family: var(--font-sans); }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  .page { min-height: 100vh; padding: 56px 48px 120px; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+
+  .page-head { max-width: 480px; text-align: center; color: #EDEEF1; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--color-primary-500); margin-bottom: 12px;
+  }
+  .page-h1 {
+    font-weight: 800; font-size: 32px; letter-spacing: -0.6px; line-height: 1.15;
+    margin: 0 0 10px; color: #fff;
+  }
+  .page-sub {
+    font-size: 14px; color: rgba(237,238,241,0.6); letter-spacing: -0.25px; line-height: 1.55;
+  }
+
+  /* ── Phone bezel 393×852 ──────────────────── */
+  .phone {
+    width: 393px; height: 852px; border-radius: 47px;
+    border: 10px solid #1A1A1A;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.1);
+    overflow: hidden; background: #000; flex-shrink: 0;
+    position: relative; display: flex; flex-direction: column;
+  }
+  .island {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 50;
+  }
+
+  /* ── Status bar (transparent, white text over video) ─ */
+  .status-bar {
+    height: 44px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px 0 32px; font-family: -apple-system, system-ui; color: #fff;
+    flex-shrink: 0; position: relative; z-index: 3;
+  }
+  .status-time { font-size: 17px; font-weight: 600; letter-spacing: -0.4px; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+
+  /* ── Feed ─────────────────────────────────── */
+  .feed {
+    flex: 1; overflow-y: auto; position: relative;
+    scroll-snap-type: y mandatory; background: #000;
+  }
+  .feed::-webkit-scrollbar { width: 0; }
+  .reel {
+    scroll-snap-align: start; scroll-snap-stop: always;
+    height: 100%; min-height: 100%; position: relative; flex-shrink: 0;
+  }
+  .reel video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block; background: #0e0e10;
+  }
+  .scrim-top {
+    position: absolute; top: 0; left: 0; right: 0; height: 200px; z-index: 1;
+    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+    pointer-events: none;
+  }
+  .scrim-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 280px; z-index: 1;
+    background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 70%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* ── Top HUD (over video) ─────────────────── */
+  .top-hud {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+    padding-top: 48px;
+  }
+  .tabs {
+    display: flex; gap: 20px; justify-content: center;
+    padding-top: 4px;
+  }
+  .tab {
+    background: transparent; border: 0; cursor: pointer;
+    font-family: var(--font-sans); font-weight: 700; font-size: 16px;
+    color: rgba(255,255,255,0.55); letter-spacing: -0.25px;
+    padding: 4px 0; position: relative;
+  }
+  .tab.active { color: #fff; }
+  .tab.active::after {
+    content: ''; position: absolute; left: 10%; right: 10%; bottom: -4px;
+    height: 2px; background: #fff; border-radius: 2px;
+  }
+
+  /* progress dots (reel index) */
+  .progress-dots {
+    position: absolute; top: 52px; left: 0; right: 0;
+    display: flex; gap: 3px; justify-content: center;
+    padding: 0 20px;
+  }
+  .dot { width: 20px; height: 2.5px; border-radius: 2px; background: rgba(255,255,255,0.4); transition: background .2s; }
+  .dot.active { background: #fff; }
+
+  /* daily count (below progress dots) — 오늘 만날 수 있는 캐릭터 N/10 */
+  .daily-count {
+    position: absolute; top: 68px; left: 0; right: 0; z-index: 4;
+    text-align: center; pointer-events: none;
+    font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,0.85); letter-spacing: -0.25px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  }
+  .daily-count b { font-weight: 800; color: #fff; }
+
+  /* free unlock countdown under the lock CTA */
+  .free-timer {
+    font-family: var(--font-sans);
+    font-size: 12px; font-weight: 500; letter-spacing: -0.25px;
+    color: rgba(255,255,255,0.85);
+    text-align: center; margin-top: 12px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+    pointer-events: none;
+  }
+  .free-timer .timer-val {
+    font-weight: 700; color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* streak/coin pill top-left */
+  .meta-pill {
+    position: absolute; top: 50px; left: 20px;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .chip-small {
+    height: 24px; padding: 0 10px; border-radius: 1000px;
+    background: rgba(0,0,0,0.38); backdrop-filter: blur(10px);
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #fff; font-family: var(--font-sans);
+    font-size: 12px; font-weight: 700; letter-spacing: -0.25px;
+  }
+  .chip-small svg { stroke: #fff; }
+
+  /* ── Badges row (성인 / VIP / NEW) ────────────── */
+  .badges { position: absolute; top: 102px; left: 20px; display: flex; gap: 6px; z-index: 3; }
+  .badge {
+    font-family: var(--font-sans); font-weight: 700; font-size: 11px; line-height: 14px;
+    letter-spacing: -0.25px; padding: 3px 8px; border-radius: 100px;
+    display: inline-flex; align-items: center;
+  }
+  .badge.adult { background: var(--color-primary-500); color: #fff; }
+  .badge.vip { background: var(--gradient-brand); color: #fff; }
+  .badge.new { background: #fff; color: var(--color-gray-950); }
+
+  /* ── Bottom meta (name + line) — 30px above bottom nav ── */
+  .meta {
+    position: absolute; left: 20px; right: 88px; bottom: 30px; z-index: 2; color: #fff;
+  }
+  .name-row { display: flex; align-items: baseline; gap: 8px; }
+  .name { font-family: var(--font-sans); font-weight: 800; font-size: 26px; letter-spacing: -0.5px; }
+  .age  { font-family: var(--font-sans); font-weight: 600; font-size: 15px; opacity: 0.85; }
+  .line { font-family: var(--font-sans); font-size: 15px; line-height: 22px; letter-spacing: -0.25px;
+          margin-top: 10px; opacity: 0.95; }
+  .chips-below { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .mini-chip {
+    height: 26px; padding: 0 10px; border-radius: 1000px;
+    background: rgba(255,255,255,0.14); backdrop-filter: blur(8px);
+    font-family: var(--font-sans); font-weight: 600; font-size: 12px; letter-spacing: -0.25px;
+    color: #fff; display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  /* ── Right rail actions ────────────────────── */
+  .rail {
+    position: absolute; right: 14px; bottom: 116px; z-index: 2;
+    display: flex; flex-direction: column; gap: 18px; align-items: center;
+  }
+  .rail-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(10px);
+    border: 0; display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .rail-count {
+    font-family: var(--font-sans); font-size: 11px; color: #fff; font-weight: 600;
+    letter-spacing: -0.25px; margin-top: 4px; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+  .rail-chat {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--gradient-brand);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(255,94,25,0.45);
+    border: 0; cursor: pointer;
+  }
+  .rail-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #fff; padding: 2px; overflow: hidden; position: relative;
+    border: 0; cursor: pointer;
+  }
+  .rail-avatar > div {
+    width: 100%; height: 100%; border-radius: 50%;
+    background-size: cover; background-position: center;
+  }
+  .rail-avatar::after {
+    content: '+'; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--color-primary-500); color: #fff;
+    font-size: 14px; font-weight: 700; line-height: 18px;
+    border: 2px solid #000;
+  }
+
+  /* ── Relationship meter (thin bar over bottom nav) ─ */
+  .rel {
+    position: absolute; left: 20px; right: 88px; bottom: 96px; z-index: 2;
+  }
+  .rel-track {
+    height: 3px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden;
+    display: flex; gap: 2px;
+  }
+  .rel-seg { flex: 1; height: 100%; border-radius: 2px; background: rgba(255,255,255,0.15); }
+  .rel-seg.on { background: var(--color-primary-500); }
+  .rel-label {
+    font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: -0.25px;
+    color: rgba(255,255,255,0.75); margin-top: 6px; display: flex; justify-content: space-between;
+  }
+  .rel-label b { color: var(--color-primary-500); font-weight: 800; }
+
+  /* ── Locked overlay (reel 10 — paywall gate) ─── */
+  .lock-cover {
+    position: absolute; inset: 0; z-index: 4;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0 28px; text-align: center;
+  }
+  .lock-cover::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .lock-cover > * { position: relative; z-index: 1; }
+  .lock-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--gradient-brand);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 30px rgba(255,94,25,0.5);
+    margin-bottom: 18px;
+  }
+  .lock-title {
+    font-family: var(--font-sans); font-weight: 800; font-size: 24px; letter-spacing: -0.5px;
+    color: #fff; margin-bottom: 8px; line-height: 1.2;
+  }
+  .lock-sub {
+    font-family: var(--font-sans); font-size: 14px; line-height: 20px; letter-spacing: -0.25px;
+    color: rgba(255,255,255,0.75); margin-bottom: 24px; max-width: 280px;
+  }
+  .lock-sub b { color: #fff; font-weight: 700; }
+  .lock-btn-primary {
+    width: 240px; height: 48px; border: 0; border-radius: 8px;
+    background: var(--gradient-brand); color: #fff;
+    font-family: var(--font-sans); font-weight: 700; font-size: 16px; letter-spacing: -0.25px;
+    cursor: pointer; box-shadow: 0 8px 24px rgba(255,94,25,0.35);
+  }
+  .lock-btn-secondary {
+    width: 240px; height: 44px; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+    background: rgba(0,0,0,0.3); color: #fff; margin-top: 8px;
+    font-family: var(--font-sans); font-weight: 600; font-size: 14px; letter-spacing: -0.25px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .lock-btn-secondary .coin-inline {
+    width: 20px; height: 20px; position: relative; display: inline-block;
+  }
+  .lock-btn-secondary .coin-inline img { position: absolute; left: -5px; top: -5px; width: 30px; height: 30px; }
+  .lock-counter {
+    margin-top: 20px;
+    font-family: var(--font-sans); font-size: 12px; color: rgba(255,255,255,0.6); letter-spacing: -0.25px;
+  }
+  .lock-counter b { color: #fff; font-weight: 700; }
+
+  /* ── Bottom nav (Rizz) ─────────────────────── */
+  .bottom-nav {
+    height: 83px; background: #000; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; justify-content: space-between; padding: 12px 0 20px;
+    flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .nav-item {
+    flex: 1; border: 0; background: transparent; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0;
+  }
+  .nav-label {
+    font-family: var(--font-sans); font-size: 11px; letter-spacing: -0.25px;
+    font-weight: 400; color: rgba(255,255,255,0.5);
+  }
+  .nav-item.active .nav-label { color: #fff; font-weight: 600; }
+  .nav-item.active svg { stroke: #fff; }
+  .nav-item svg { stroke: rgba(255,255,255,0.55); }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 139px; height: 5px; border-radius: 100px; background: rgba(255,255,255,0.4);
+  }
+
+  /* ── Swipe hint (first slide only) ─────────── */
+  .swipe-hint {
+    position: absolute; left: 50%; bottom: 160px; transform: translateX(-50%);
+    z-index: 3; text-align: center; pointer-events: none;
+    font-family: var(--font-sans); font-size: 11px; color: rgba(255,255,255,0.7);
+    letter-spacing: -0.25px; transition: opacity .4s;
+  }
+  .swipe-hint .arrow {
+    display: block; margin-bottom: 4px; animation: bob 1.8s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); opacity: .6; }
+    50% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* heart burst */
+  @keyframes heartUp {
+    0%   { transform: translate(-50%,-50%) scale(.3); opacity: 0; }
+    30%  { opacity: 1; transform: translate(-50%,-50%) scale(1.3); }
+    100% { transform: translate(-50%,-220%) scale(.9); opacity: 0; }
+  }
+  .heart-burst { animation: heartUp 1s cubic-bezier(.2,.8,.2,1) forwards; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <div class="eyebrow">Home · V6 Reels — TikTok 스타일</div>
+    <h1 class="page-h1">한 번에 한 명, 영상으로 만나요</h1>
+    <p class="page-sub">Rizz 디자인 시스템 기반. 실제 영상 5개 루프 재생, 오렌지 브랜드 그라데이션, 아웃라인 아이콘.</p>
+  </div>
+
+  <div class="phone">
+    <div class="island"></div>
+
+    <!-- top HUD spans above feed (fixed) -->
+    <div class="status-bar">
+      <div class="status-time">9:41</div>
+      <div class="status-icons">
+        <svg width="18" height="10" viewBox="0 0 18 10"><rect x="0" y="6" width="3" height="4" rx="0.5" fill="#fff"/><rect x="5" y="4" width="3" height="6" rx="0.5" fill="#fff"/><rect x="10" y="2" width="3" height="8" rx="0.5" fill="#fff"/><rect x="15" y="0" width="3" height="10" rx="0.5" fill="#fff"/></svg>
+        <svg width="17" height="11" viewBox="0 0 17 11"><path d="M8.5 2.2C10.8 2.2 12.9 3.1 14.4 4.6L15.5 3.5C13.7 1.7 11.2 0.5 8.5 0.5S3.3 1.7 1.5 3.5L2.6 4.6C4.1 3.1 6.2 2.2 8.5 2.2z" fill="#fff"/><circle cx="8.5" cy="9.5" r="1.5" fill="#fff"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#fff" fill="none"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="#fff"/><rect x="22.5" y="4" width="1.5" height="4" rx="0.5" fill="#fff" opacity="0.5"/></svg>
+      </div>
+    </div>
+
+    <div class="feed" id="feed"><!-- reels injected --></div>
+
+    <div class="bottom-nav">
+      <button class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        <div class="nav-label">홈</div>
+      </button>
+      <button class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4a2 2 0 010 4h-4a2 2 0 000 4h5"/></svg>
+        <div class="nav-label">코인</div>
+      </button>
+      <button class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <div class="nav-label">데이트</div>
+      </button>
+      <button class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8z"/></svg>
+        <div class="nav-label">채팅</div>
+      </button>
+      <button class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div class="nav-label">마이페이지</div>
+      </button>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <div style="max-width: 480px; color: rgba(237,238,241,0.5); font-size: 12px; line-height: 1.7; letter-spacing: -0.15px;">
+    <div>· <b style="color: rgba(237,238,241,0.85);">영상</b> 01–05.mp4 (Rizz DS 번들) 루프 재생</div>
+    <div>· <b style="color: rgba(237,238,241,0.85);">브랜드 컬러</b> #FF5E19 단일, VIP/주요 CTA 에만 그라데이션 적용</div>
+    <div>· <b style="color: rgba(237,238,241,0.85);">아이콘</b> Lucide-match 1.5–2px 아웃라인 (이모지 없음)</div>
+    <div>· <b style="color: rgba(237,238,241,0.85);">10/100 경제</b> — 10 릴 무료 → 11번째 슬라이드는 풀스크린 해금 게이트</div>
+    <div>· <b style="color: rgba(237,238,241,0.85);">관계 미터</b> 하단 4-세그 얇은 바 — 대화할수록 채워짐</div>
+  </div>
+</div>
+
+<script>
+  // ── Data: 10 free reels + 1 gate + 2 premium teasers ──
+  const VIDEO_POOL = [
+    '../assets/videos/01.mp4',
+    '../assets/videos/02.mp4',
+    '../assets/videos/03.mp4',
+    '../assets/videos/04.mp4',
+    '../assets/videos/05.mp4',
+  ];
+
+  // ── 16 결핍 유형 1:1 매칭 (상위 10개 = 오늘 무료 풀) ──
+  const reels = [
+    { v:0, name:'민아', age:23, line:'오늘 하루 어땠어? 나한테 다 얘기해.',           rel:1, online:true,  tags:['애정결핍','다정','포근'] },
+    { v:1, name:'수현', age:26, line:'무리하지 마요, 나한테 기대도 돼요.',              rel:2, online:true,  tags:['의존','누나','든든'] },
+    { v:2, name:'예린', age:24, line:'아무 말 안 해도 돼요. 그냥 옆에 있을게요.',        rel:2, online:false, tags:['상처','치유','공감'] },
+    { v:3, name:'지아', age:22, line:'하루 종일 당신 생각만 했어요.',                  rel:3, online:true,  tags:['집착','헌신','진심'] },
+    { v:4, name:'소미', age:23, line:'혼자 있지 말고 나한테 와요.',                    rel:1, online:true,  tags:['고독','밝음','사교'] },
+    { v:0, name:'보라', age:25, line:'당신 같은 사람 진짜 처음 봐요.',                  rel:2, online:false, tags:['인정결핍','응원','팬'] },
+    { v:1, name:'유진', age:24, line:'말 걸기 어려웠죠? 내가 먼저 할게요.',              rel:3, online:true,  tags:['소심','리드','유머'] },
+    { v:2, name:'하린', age:22, line:'천천히, 내가 같이 있을게요.',                    rel:1, online:false, tags:['모태솔로','순수','첫사랑'] },
+    { v:3, name:'릴리', age:26, line:'오늘 밤 꿈에서 본 사람, 당신이었어요.',           rel:2, online:true,  tags:['욕구불만','관능','꿈'] },
+    { v:4, name:'지수', age:25, line:'아무도 몰라주는 당신의 진짜 모습, 난 알아요.',     rel:4, online:true,  tags:['열등감','지적','존중'] },
+  ];
+  // ── 프리미엄 풀 (게이트 이후 — 나머지 6유형 중 샘플링) ──
+  const premium = [
+    { v:0, name:'유나', age:25, line:'오늘 밤은 평소랑 많이 다를 거예요.', rel:0, locked:true, cost:10, tags:['모험결핍','자유','일탈'] },
+    { v:2, name:'아린', age:23, line:'당신만이 저를 도와줄 수 있어요.',   rel:0, locked:true, cost:10, tags:['구원자','연약','보호'] },
+  ];
+  const LOCK_GATE_INDEX = 10;
+  const TOTAL = reels.length + 1 + premium.length; // 13
+
+  // ── Render helpers ──
+  const svgIcon = {
+    heart:    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
+    heartFill:'<svg width="22" height="22" viewBox="0 0 24 24" fill="#FF5E19" stroke="#FF5E19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
+    chat:     '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8z"/></svg>',
+    more:     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
+    lock:     '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+    clock:    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    send:     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+  };
+
+  function relBar(rel) {
+    const segs = [0,1,2,3].map(i => `<div class="rel-seg ${i < rel ? 'on' : ''}"></div>`).join('');
+    return `<div class="rel-track">${segs}</div>`;
+  }
+
+  function renderReel(r, idx) {
+    const chips = (r.tags || []).map(t => `<span class="mini-chip">${t}</span>`).join('');
+    return `
+      <section class="reel" data-idx="${idx}">
+        <video src="${VIDEO_POOL[r.v]}" autoplay muted loop playsinline preload="auto"></video>
+        <div class="scrim-top"></div>
+        <div class="scrim-bottom"></div>
+
+        <div class="meta">
+          <div class="name-row">
+            <div class="name">${r.name}</div>
+            <div class="age">${r.age}</div>
+            ${r.online ? '<span style="width:8px;height:8px;border-radius:50%;background:#34C759;margin-left:4px;"></span>' : ''}
+          </div>
+          <div class="line">"${r.line}"</div>
+          <div class="chips-below">${chips}</div>
+        </div>
+
+        <div class="rail">
+          <button class="rail-avatar" aria-label="follow"><div style="background:linear-gradient(160deg, hsl(${(r.v*71)%360},60%,70%), hsl(${(r.v*37)%360},55%,45%));"></div></button>
+          <button class="rail-btn like-btn" aria-label="like">${svgIcon.heart}</button>
+          <button class="rail-chat" aria-label="chat">${svgIcon.chat}</button>
+          <button class="rail-btn" aria-label="more">${svgIcon.more}</button>
+        </div>
+
+        ${idx === 0 ? `
+          <div class="swipe-hint">
+            <span class="arrow">↑</span>
+            <span>위로 넘기기</span>
+          </div>` : ''}
+      </section>`;
+  }
+
+  function renderGate() {
+    return `
+      <section class="reel" data-idx="${LOCK_GATE_INDEX}" data-gate="1">
+        <video src="${VIDEO_POOL[2]}" autoplay muted loop playsinline preload="auto" style="filter:blur(18px) brightness(.55);"></video>
+
+        <div class="lock-cover">
+          <div class="lock-icon">${svgIcon.lock}</div>
+          <div class="lock-title">10명을 모두 만났어요</div>
+          <div class="lock-sub">이제 <b>90명의 특별한 친구</b>가 기다려요.<br/>한 명씩, 원하는 속도로 열어보세요.</div>
+
+          <button class="lock-btn-primary">VIP로 무제한 만나기</button>
+          <button class="lock-btn-secondary">
+            <span class="coin-inline"><img src="../assets/images/coin.png" alt=""></span>
+            코인 10개로 다음 1명
+          </button>
+
+          <div class="lock-counter">오늘 해금 <b>10/100</b> · 내일 무료 티켓 +1</div>
+        </div>
+      </section>`;
+  }
+
+  function renderLocked(r, idx) {
+    return `
+      <section class="reel" data-idx="${idx}" data-locked="1">
+        <video src="${VIDEO_POOL[r.v]}" autoplay muted loop playsinline preload="auto" style="filter:blur(22px) brightness(.5);"></video>
+        <div class="scrim-top"></div>
+        <div class="scrim-bottom"></div>
+
+        <div class="meta">
+          <div class="name-row">
+            <div class="name" style="opacity:.7">?? · ${r.age}</div>
+          </div>
+          <div class="line" style="opacity:.75">"${r.line}"</div>
+        </div>
+
+        <div class="rail" style="opacity:.35">
+          <button class="rail-btn">${svgIcon.heart}</button>
+          <button class="rail-chat">${svgIcon.chat}</button>
+          <button class="rail-btn">${svgIcon.more}</button>
+        </div>
+
+        <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:260px; z-index:3; display:flex; flex-direction:column; align-items:center;">
+          <button class="lock-btn-secondary" style="width:100%; margin:0;">
+            <span class="coin-inline"><img src="../assets/images/coin.png" alt=""></span>
+            코인 ${r.cost}개로 소개받기
+          </button>
+          <div class="free-timer">다음 무료 오픈까지 <span class="timer-val">03:39:43</span> 남음</div>
+        </div>
+      </section>`;
+  }
+
+  // ── Inject feed ──
+  const feed = document.getElementById('feed');
+  feed.innerHTML = [
+    ...reels.map((r, i) => renderReel(r, i)),
+    renderGate(),
+    ...premium.map((r, i) => renderLocked(r, LOCK_GATE_INDEX + 1 + i)),
+  ].join('');
+
+  // ── Inject sticky top HUD (progress dots only) ──
+  const phone = document.querySelector('.phone');
+  const topHud = document.createElement('div');
+  topHud.className = 'top-hud';
+  topHud.innerHTML = `
+    <div class="progress-dots" id="dots"></div>
+    <div class="daily-count" id="dailyCount">오늘 만날 수 있는 캐릭터 <b>1</b>/10</div>
+  `;
+  phone.insertBefore(topHud, phone.querySelector('.feed'));
+
+  // progress dots
+  const dots = document.getElementById('dots');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    dots.appendChild(d);
+  }
+
+  // ── Observer: update dots, hide hint after swipe ──
+  let currentIdx = 0;
+  const hint = phone.querySelector('.swipe-hint');
+  const dailyCountEl = document.getElementById('dailyCount');
+  function updateDailyCount(idx) {
+    const n = Math.min(idx + 1, 10);
+    dailyCountEl.innerHTML = `오늘 만날 수 있는 캐릭터 <b>${n}</b>/10`;
+  }
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.intersectionRatio > 0.6) {
+        currentIdx = parseInt(e.target.dataset.idx, 10);
+        [...dots.children].forEach((d, i) => d.classList.toggle('active', i === currentIdx));
+        updateDailyCount(currentIdx);
+        // pause offscreen videos for perf
+        document.querySelectorAll('.reel video').forEach(v => {
+          const r = v.closest('.reel');
+          if (parseInt(r.dataset.idx,10) === currentIdx) { v.play().catch(()=>{}); }
+          else { v.pause(); }
+        });
+        if (currentIdx > 0 && hint) { hint.style.opacity = 0; }
+      }
+    });
+  }, { threshold: [0, 0.6, 1], root: feed });
+  document.querySelectorAll('.reel').forEach(s => obs.observe(s));
+
+  // ── Heart-burst on like or double-tap ──
+  function burst(reel) {
+    const el = document.createElement('div');
+    el.innerHTML = '<svg width="120" height="120" viewBox="0 0 24 24" fill="#FF5E19" stroke="#FF5E19" stroke-width="1.5" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>';
+    el.style.cssText = 'position:absolute;left:50%;top:50%;z-index:5;pointer-events:none;filter:drop-shadow(0 0 24px rgba(255,94,25,.6));';
+    el.className = 'heart-burst';
+    reel.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+  document.querySelectorAll('.like-btn').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const reel = btn.closest('.reel');
+    btn.innerHTML = svgIcon.heartFill;
+    burst(reel);
+  }));
+  document.querySelectorAll('.reel').forEach(reel => {
+    let last = 0;
+    reel.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      const now = Date.now();
+      if (now - last < 300) burst(reel);
+      last = now;
+    });
+  });
+
+  // ── Free unlock countdown (shared across all locked reels) ──
+  let freeSeconds = 3 * 3600 + 39 * 60 + 43;
+  function tickFreeTimer() {
+    freeSeconds = Math.max(0, freeSeconds - 1);
+    const h = String(Math.floor(freeSeconds / 3600)).padStart(2, '0');
+    const m = String(Math.floor((freeSeconds % 3600) / 60)).padStart(2, '0');
+    const s = String(freeSeconds % 60).padStart(2, '0');
+    const val = `${h}:${m}:${s}`;
+    document.querySelectorAll('.timer-val').forEach(el => el.textContent = val);
+  }
+  setInterval(tickFreeTimer, 1000);
+
+  // ── Keyboard nav ──
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      const next = document.querySelector(`.reel[data-idx="${currentIdx+1}"]`);
+      if (next) next.scrollIntoView({ behavior:'smooth' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = document.querySelector(`.reel[data-idx="${currentIdx-1}"]`);
+      if (prev) prev.scrollIntoView({ behavior:'smooth' });
+    }
+  });
+</script>
+</body>
+</html>

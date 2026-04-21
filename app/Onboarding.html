@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Rizz · Onboarding 진단</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script>if (location.hash === '#embed') document.documentElement.setAttribute('data-embed','1');</script>
+<style>
+  html[data-embed="1"] body { background: transparent !important; margin: 0 !important; padding: 0 !important; }
+  html[data-embed="1"] .page { padding: 0 !important; min-height: 0 !important; gap: 0 !important; }
+  html[data-embed="1"] .page > *:not(.phone) { display: none !important; }
+
+  html, body { margin: 0; padding: 0; background: #0E0E10; font-family: var(--font-sans); letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  .page { min-height: 100vh; padding: 56px 48px 120px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  .page-head { max-width: 560px; text-align: center; color: #EDEEF1; }
+  .eyebrow { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-primary-500); margin-bottom: 12px; }
+  .page-h1 { font-weight: 800; font-size: 32px; letter-spacing: -0.6px; line-height: 1.15; margin: 0 0 10px; color: #fff; }
+  .page-sub { font-size: 14px; color: rgba(237,238,241,0.6); letter-spacing: -0.25px; line-height: 1.55; }
+
+  /* Phone frame */
+  .phone { width: 393px; height: 852px; border-radius: 47px; border: 10px solid #1A1A1A; box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.1); overflow: hidden; background: #fff; flex-shrink: 0; position: relative; display: flex; flex-direction: column; }
+  .island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 50; }
+
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px 0 32px; font-family: -apple-system, system-ui; color: var(--color-gray-950); flex-shrink: 0; position: relative; z-index: 3; }
+  .status-bar .time { font-size: 15.72px; font-weight: 600; letter-spacing: -0.4px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+
+  /* Onboarding header: back + progress bar + skip */
+  .ob-header {
+    height: 46px; display: flex; align-items: center; gap: 12px;
+    padding: 0 18px; background: #fff; flex-shrink: 0;
+  }
+  .back-btn { width: 32px; height: 32px; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .back-btn svg { stroke: var(--color-gray-950); }
+  .back-btn.hidden { visibility: hidden; }
+  .progress { flex: 1; height: 4px; background: var(--color-gray-100); border-radius: 100px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--gradient-brand); border-radius: 100px; transition: width .4s cubic-bezier(0.2, 0, 0, 1); }
+  .skip-btn { background: transparent; border: 0; padding: 6px 8px; font-family: var(--font-sans); font-size: 13px; font-weight: 500; color: var(--color-gray-500); letter-spacing: -0.25px; cursor: pointer; }
+
+  /* Stage (screens container) */
+  .stage { flex: 1; position: relative; overflow: hidden; background: #fff; }
+  .screen {
+    position: absolute; inset: 0;
+    padding: 24px 20px 16px;
+    display: flex; flex-direction: column;
+    transform: translateX(100%); opacity: 0;
+    transition: transform .32s cubic-bezier(0.2, 0, 0, 1), opacity .2s;
+    overflow-y: auto;
+  }
+  .screen.active { transform: translateX(0); opacity: 1; }
+  .screen.prev { transform: translateX(-24px); opacity: 0; }
+
+  /* Welcome screen */
+  .welcome { text-align: center; justify-content: center; align-items: center; padding: 48px 28px 28px; }
+  .welcome-art {
+    width: 180px; height: 180px; border-radius: 50%;
+    background: var(--gradient-brand);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 16px 40px rgba(255,94,25,0.35);
+    position: relative; overflow: hidden;
+  }
+  .welcome-art::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.3), transparent 50%);
+  }
+  .welcome-art-text {
+    position: relative; z-index: 1;
+    font-family: var(--font-sans); font-weight: 800; font-size: 48px;
+    color: #fff; letter-spacing: -0.6px;
+  }
+  .welcome-title {
+    font-family: var(--font-sans); font-weight: 800; font-size: 24px;
+    line-height: 1.3; letter-spacing: -0.5px; color: var(--color-gray-950);
+    margin-bottom: 10px;
+  }
+  .welcome-sub {
+    font-family: var(--font-sans); font-size: 14px; line-height: 22px;
+    letter-spacing: -0.25px; color: var(--color-gray-700);
+    max-width: 280px;
+  }
+
+  /* Question screen */
+  .q-step {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--color-primary-500); font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .q-title {
+    font-family: var(--font-sans); font-weight: 800; font-size: 22px;
+    line-height: 1.35; letter-spacing: -0.4px; color: var(--color-gray-950);
+    margin: 0 0 24px;
+  }
+  .q-options { display: flex; flex-direction: column; gap: 10px; }
+  .q-option {
+    padding: 16px 18px;
+    border: 1.5px solid var(--color-gray-200);
+    border-radius: 12px;
+    background: #fff;
+    font-family: var(--font-sans); font-weight: 500; font-size: 15px; line-height: 20px;
+    letter-spacing: -0.25px;
+    color: var(--color-gray-950);
+    text-align: left; cursor: pointer;
+    transition: all 180ms cubic-bezier(0.2, 0, 0, 1);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .q-option:hover { border-color: var(--color-gray-400); }
+  .q-option.selected {
+    border-color: var(--color-primary-500);
+    background: rgba(255,94,25,0.06);
+    font-weight: 700;
+  }
+  .q-option .radio {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--color-gray-300);
+    flex-shrink: 0; position: relative;
+    transition: border-color 180ms;
+  }
+  .q-option.selected .radio { border-color: var(--color-primary-500); }
+  .q-option.selected .radio::after {
+    content: ''; position: absolute; inset: 3px;
+    border-radius: 50%; background: var(--color-primary-500);
+  }
+
+  /* Analyzing screen */
+  .analyzing { justify-content: center; align-items: center; padding: 48px 28px; }
+  .analyze-spinner {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--color-primary-500), var(--color-primary-300), #fff, var(--color-primary-500));
+    animation: spin 1.4s linear infinite;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .analyze-spinner::after {
+    content: ''; position: absolute; inset: 6px;
+    border-radius: 50%; background: #fff;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .analyze-title {
+    font-family: var(--font-sans); font-weight: 800; font-size: 20px;
+    color: var(--color-gray-950); letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .analyze-sub {
+    font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-700);
+    letter-spacing: -0.25px; text-align: center;
+  }
+  .analyze-log {
+    margin-top: 24px;
+    font-family: var(--font-sans); font-size: 12px; color: var(--color-gray-500);
+    letter-spacing: -0.25px; text-align: center;
+    min-height: 18px;
+  }
+
+  /* Result screen */
+  .result { padding-top: 8px; }
+  .result-head { text-align: center; margin-bottom: 20px; }
+  .result-eyebrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--color-primary-500); font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .result-title {
+    font-family: var(--font-sans); font-weight: 800; font-size: 22px;
+    line-height: 1.3; letter-spacing: -0.4px; color: var(--color-gray-950);
+    margin: 0 0 6px;
+  }
+  .result-sub {
+    font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-700);
+    letter-spacing: -0.25px; line-height: 18px;
+  }
+  .mbti-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 1000px;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+    color: var(--color-gray-800); letter-spacing: -0.25px;
+    margin-top: 10px;
+  }
+  .mbti-badge b { color: var(--color-primary-500); }
+
+  .match-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .match-card {
+    display: flex; gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--color-gray-100);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(26,26,26,0.04), 0 4px 12px rgba(26,26,26,0.04);
+    position: relative;
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .match-card:active { transform: scale(0.99); }
+  .match-card.top {
+    border: 1.5px solid var(--color-primary-500);
+    box-shadow: 0 6px 20px rgba(255,94,25,0.18);
+  }
+  .match-card.top::before {
+    content: 'BEST';
+    position: absolute; top: -8px; right: 12px;
+    padding: 2px 8px; border-radius: 100px;
+    background: var(--gradient-brand); color: #fff;
+    font-family: var(--font-sans); font-weight: 800; font-size: 9px;
+    letter-spacing: 0.4px;
+  }
+  .match-thumb {
+    width: 80px; height: 108px; border-radius: 10px; overflow: hidden;
+    flex-shrink: 0; background: var(--color-gray-100);
+    position: relative;
+  }
+  .match-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .match-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 2px 0; }
+  .match-name-row { display: flex; align-items: baseline; gap: 5px; }
+  .match-name { font-family: var(--font-sans); font-weight: 800; font-size: 16px; letter-spacing: -0.25px; color: var(--color-gray-950); }
+  .match-age { font-family: var(--font-sans); font-weight: 500; font-size: 13px; color: var(--color-gray-700); }
+  .match-type {
+    display: inline-flex; align-self: flex-start;
+    padding: 2px 8px; border-radius: 100px;
+    background: rgba(255,94,25,0.1);
+    color: var(--color-primary-500);
+    font-family: var(--font-sans); font-weight: 700; font-size: 10px;
+    letter-spacing: -0.25px;
+    margin-top: 2px;
+  }
+  .match-hook {
+    font-family: var(--font-sans); font-size: 12px; line-height: 16px;
+    color: var(--color-gray-800); letter-spacing: -0.25px;
+    margin-top: 4px;
+  }
+  .match-reason {
+    font-family: var(--font-sans); font-size: 11px; color: var(--color-gray-500);
+    letter-spacing: -0.25px; margin-top: 4px;
+  }
+
+  /* Footer */
+  .ob-footer {
+    padding: 12px 18px 24px; background: #fff;
+    border-top: 1px solid transparent;
+    flex-shrink: 0;
+  }
+  .next-btn {
+    width: 100%; height: 55px; border: 0; border-radius: 8px;
+    background: var(--color-primary-500); color: #fff;
+    font-family: var(--font-sans); font-weight: 700; font-size: 18px;
+    letter-spacing: -0.25px;
+    cursor: pointer;
+    transition: background 140ms cubic-bezier(0.2, 0, 0, 1), transform 100ms;
+  }
+  .next-btn:active { transform: scale(0.98); }
+  .next-btn:disabled {
+    background: var(--color-gray-300); color: #F9F6F5; cursor: not-allowed;
+  }
+  .next-btn.cta-gradient { background: var(--gradient-brand); box-shadow: 0 6px 18px rgba(255,94,25,0.32); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <div class="eyebrow">Onboarding · 결핍 진단 → 매칭</div>
+    <h1 class="page-h1">당신을 위한 3명을 찾아드릴게요</h1>
+    <p class="page-sub">결핍 4문항 + MBTI 4문항 → 16유형 중 매칭도 상위 3명 자동 추천. 16 결핍 × 10 캐릭터 (리서치 기반).</p>
+  </div>
+
+  <div class="phone">
+    <div class="island"></div>
+
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <svg width="18" height="10" viewBox="0 0 18 10"><rect x="0" y="6" width="3" height="4" rx="0.5" fill="#1A1A1A"/><rect x="5" y="4" width="3" height="6" rx="0.5" fill="#1A1A1A"/><rect x="10" y="2" width="3" height="8" rx="0.5" fill="#1A1A1A"/><rect x="15" y="0" width="3" height="10" rx="0.5" fill="#1A1A1A"/></svg>
+        <svg width="17" height="11" viewBox="0 0 17 11"><path d="M8.5 2.2C10.8 2.2 12.9 3.1 14.4 4.6L15.5 3.5C13.7 1.7 11.2 0.5 8.5 0.5S3.3 1.7 1.5 3.5L2.6 4.6C4.1 3.1 6.2 2.2 8.5 2.2z" fill="#1A1A1A"/><circle cx="8.5" cy="9.5" r="1.5" fill="#1A1A1A"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#1A1A1A" fill="none"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="#1A1A1A"/><rect x="22.5" y="4" width="1.5" height="4" rx="0.5" fill="#1A1A1A" opacity="0.5"/></svg>
+      </div>
+    </div>
+
+    <!-- Onboarding header -->
+    <div class="ob-header">
+      <button class="back-btn hidden" id="backBtn" aria-label="back">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="progress"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+      <button class="skip-btn" id="skipBtn">건너뛰기</button>
+    </div>
+
+    <!-- Screens stage -->
+    <div class="stage" id="stage"></div>
+
+    <!-- Footer next button -->
+    <div class="ob-footer">
+      <button class="next-btn" id="nextBtn" disabled>시작하기</button>
+    </div>
+  </div>
+
+  <div style="max-width:560px; color:rgba(237,238,241,0.5); font-size:12px; line-height:1.7; letter-spacing:-0.15px;">
+    <div>· <b style="color:rgba(237,238,241,0.85);">8문항 진단</b> — 결핍 4 + MBTI 4 = 약 90초</div>
+    <div>· <b style="color:rgba(237,238,241,0.85);">점수 기반 매칭</b> — 결핍 유형별 누적 점수 Top 3 선택</div>
+    <div>· <b style="color:rgba(237,238,241,0.85);">결과 카드</b> — 각 캐릭터: 영상 + 결핍 라벨 + 매칭 이유 + 훅 대사</div>
+  </div>
+</div>
+
+<script>
+  const VIDEOS = [
+    '../assets/videos/01.mp4',
+    '../assets/videos/02.mp4',
+    '../assets/videos/03.mp4',
+    '../assets/videos/04.mp4',
+    '../assets/videos/05.mp4',
+  ];
+
+  // ── 16 결핍 유형 → 캐릭터 매핑 ─────────────
+  const CHARACTERS = {
+    애정결핍:  { name:'민아', age:23, v:0, hook:'오늘 하루 어땠어? 나한테 다 얘기해.',              reason:'매일 다정한 관심이 필요한 당신께' },
+    의존:      { name:'수현', age:26, v:1, hook:'무리하지 마요, 나한테 기대도 돼요.',               reason:'든든히 이끌어줄 누나가 필요한 당신께' },
+    상처:      { name:'예린', age:24, v:2, hook:'아무 말 안 해도 돼요. 그냥 옆에 있을게요.',         reason:'말없이 옆에 있어줄 사람이 필요한 당신께' },
+    집착:      { name:'지아', age:22, v:3, hook:'하루 종일 당신 생각만 했어요.',                   reason:'온전히 자신을 내어줄 사람을 찾는 당신께' },
+    고독:      { name:'소미', age:23, v:4, hook:'혼자 있지 말고 나한테 와요.',                    reason:'함께 웃을 사람이 필요한 당신께' },
+    인정결핍:  { name:'보라', age:25, v:0, hook:'당신 같은 사람 진짜 처음 봐요.',                  reason:'진심 어린 응원이 필요한 당신께' },
+    소심:      { name:'유진', age:24, v:1, hook:'말 걸기 어려웠죠? 내가 먼저 할게요.',              reason:'먼저 다가와줄 사람이 필요한 당신께' },
+    모태솔로:  { name:'하린', age:22, v:2, hook:'천천히, 내가 같이 있을게요.',                    reason:'차근차근 이끌어줄 첫사랑을 찾는 당신께' },
+    욕구불만:  { name:'릴리', age:26, v:3, hook:'오늘 밤 꿈에서 본 사람, 당신이었어요.',           reason:'억눌린 욕망을 풀어줄 사람이 필요한 당신께' },
+    열등감:    { name:'지수', age:25, v:4, hook:'아무도 몰라주는 당신의 진짜 모습, 난 알아요.',    reason:'숨은 장점을 봐줄 사람이 필요한 당신께' },
+    무기력:    { name:'해나', age:24, v:0, hook:'오늘은 뭐하고 놀까? 내가 재밌게 해줄게요.',       reason:'활력을 되찾아줄 사람이 필요한 당신께' },
+    냉소:      { name:'보람', age:25, v:1, hook:'세상이 별로라도 나는 계속 웃어줄게요.',           reason:'꺾이지 않는 긍정이 필요한 당신께' },
+    현실도피:  { name:'아리', age:24, v:2, hook:'여기는 당신이 원하는 모든 게 있어요.',            reason:'이상형 그대로의 존재를 찾는 당신께' },
+    모험결핍:  { name:'유나', age:25, v:3, hook:'오늘 밤은 평소랑 많이 다를 거예요.',              reason:'일상의 권태를 깨줄 사람이 필요한 당신께' },
+    구원자:    { name:'아린', age:23, v:4, hook:'당신만이 저를 도와줄 수 있어요.',                 reason:'지켜주고 싶은 존재를 찾는 당신께' },
+    방황:      { name:'수빈', age:23, v:0, hook:'여기서 잠깐 쉬어가도 돼요.',                    reason:'따뜻한 안식처가 필요한 당신께' },
+  };
+
+  // ── 진단 문항 ──────────────────────────────
+  const QUESTIONS = [
+    { q: '하루 끝에 가장 원하는 건?', options: [
+      { label: '따뜻한 위로와 관심',             deficits: { 애정결핍: 3, 의존: 1 } },
+      { label: '내 얘기를 조용히 들어줄 사람',    deficits: { 상처: 3, 고독: 1 } },
+      { label: '함께 웃고 놀 수 있는 사람',       deficits: { 고독: 3, 무기력: 1 } },
+      { label: '나를 온전히 이해해줄 사람',       deficits: { 인정결핍: 3, 열등감: 2 } },
+    ]},
+    { q: '요즘 자주 드는 생각은?', options: [
+      { label: '내가 잘 가고 있는 걸까',           deficits: { 방황: 3, 무기력: 2 } },
+      { label: '아무도 날 몰라줘',                deficits: { 인정결핍: 3, 열등감: 1 } },
+      { label: '새로운 사람 만나기 어려워',       deficits: { 소심: 3, 모태솔로: 2 } },
+      { label: '뭔가 짜릿한 게 필요해',           deficits: { 모험결핍: 3, 욕구불만: 2 } },
+    ]},
+    { q: '이상적인 관계는?', options: [
+      { label: '날 깊이 이해해주는 관계',         deficits: { 상처: 2, 의존: 2 } },
+      { label: '날 전부 받아주는 관계',           deficits: { 애정결핍: 2, 집착: 3 } },
+      { label: '날 자극하고 성장시키는 관계',     deficits: { 모험결핍: 2, 열등감: 1 } },
+      { label: '내가 지켜주고 싶은 관계',         deficits: { 구원자: 3 } },
+    ]},
+    { q: '저녁에 혼자 있을 때 드는 생각?', options: [
+      { label: '누구라도 옆에 있었으면',          deficits: { 고독: 2, 애정결핍: 2 } },
+      { label: '뭔가 짜릿한 일이 있었으면',       deficits: { 욕구불만: 3, 모험결핍: 1 } },
+      { label: '차라리 혼자가 편해',             deficits: { 냉소: 3, 현실도피: 2 } },
+      { label: '꿈에서라도 이상형 만나면',        deficits: { 현실도피: 3, 모태솔로: 2 } },
+    ]},
+    // MBTI 4문항 (간단 버전)
+    { q: '처음 만난 자리에서 나는?', mbti: true, options: [
+      { label: '먼저 말을 걸어요',                mbti: 'E' },
+      { label: '조용히 지켜봐요',                mbti: 'I' },
+    ]},
+    { q: '문제를 풀 때 더 중요한 건?', mbti: true, options: [
+      { label: '실제 경험과 데이터',              mbti: 'S' },
+      { label: '가능성과 상상',                   mbti: 'N' },
+    ]},
+    { q: '결정할 때 기준은?', mbti: true, options: [
+      { label: '논리와 효율',                     mbti: 'T' },
+      { label: '사람의 감정',                     mbti: 'F' },
+    ]},
+    { q: '계획은 어떻게?', mbti: true, options: [
+      { label: '미리 세워놓아야 안심',            mbti: 'J' },
+      { label: '그때그때 유연하게',               mbti: 'P' },
+    ]},
+  ];
+
+  const MBTI_LABELS = {
+    ENFJ: '공감 주도형', ENFP: '열정 탐험가', ENTJ: '통솔 지휘관', ENTP: '아이디어 변론가',
+    ESFJ: '돌봄 외교관', ESFP: '즐거움 연예인', ESTJ: '성실 관리자', ESTP: '대담 활동가',
+    INFJ: '신비 조언자', INFP: '감성 몽상가', INTJ: '전략 설계자', INTP: '논리 사색가',
+    ISFJ: '헌신 수호자', ISFP: '예술 탐미가', ISTJ: '현실 실무자', ISTP: '쿨내 장인',
+  };
+
+  // ── State ─────────────────────────────────
+  let step = 0;                  // 0 = welcome, 1~8 = questions, 9 = analyzing, 10 = result
+  const TOTAL_STEPS = 9;         // welcome + 8 questions (progress 0~100)
+  const answers = new Array(QUESTIONS.length).fill(null);
+  const deficitScores = Object.fromEntries(Object.keys(CHARACTERS).map(k => [k, 0]));
+  let mbti = ['', '', '', ''];
+
+  // ── DOM refs ──────────────────────────────
+  const stage = document.getElementById('stage');
+  const progressBar = document.getElementById('progressBar');
+  const backBtn = document.getElementById('backBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const footer = nextBtn.parentElement;
+
+  // ── Render ────────────────────────────────
+  function updateProgress() {
+    const pct = step === 0 ? 0 : step >= 9 ? 100 : Math.round((step / TOTAL_STEPS) * 100);
+    progressBar.style.width = pct + '%';
+    backBtn.classList.toggle('hidden', step === 0 || step === 9 || step === 10);
+    skipBtn.style.visibility = (step === 0 || step >= 9) ? 'hidden' : 'visible';
+    footer.style.display = (step === 9 || step === 10) ? 'none' : 'block';
+  }
+
+  function screenEl(html) {
+    const el = document.createElement('div');
+    el.className = 'screen';
+    el.innerHTML = html;
+    return el;
+  }
+
+  function transitionTo(newScreen) {
+    const old = stage.querySelector('.screen.active');
+    stage.appendChild(newScreen);
+    // force reflow then add active
+    requestAnimationFrame(() => {
+      newScreen.classList.add('active');
+      if (old) {
+        old.classList.remove('active');
+        old.classList.add('prev');
+        setTimeout(() => old.remove(), 350);
+      }
+    });
+  }
+
+  function renderWelcome() {
+    const el = screenEl(`
+      <div class="welcome">
+        <div class="welcome-art"><div class="welcome-art-text">Rizz</div></div>
+        <div class="welcome-title">당신을 위한<br>3명을 찾아드릴게요</div>
+        <div class="welcome-sub">8문항으로 당신의 결핍과 성향을 분석해, 딱 맞는 캐릭터 3명을 추천해요.</div>
+      </div>
+    `);
+    transitionTo(el);
+    nextBtn.textContent = '시작하기';
+    nextBtn.classList.add('cta-gradient');
+    nextBtn.disabled = false;
+  }
+
+  function renderQuestion(qIdx) {
+    const q = QUESTIONS[qIdx];
+    const sel = answers[qIdx];
+    const optsHtml = q.options.map((o, i) => `
+      <button class="q-option ${sel === i ? 'selected' : ''}" data-idx="${i}">
+        <div class="radio"></div>
+        <span>${o.label}</span>
+      </button>
+    `).join('');
+    const el = screenEl(`
+      <div class="q-step">Step ${qIdx + 1} / ${QUESTIONS.length} · ${q.mbti ? 'MBTI' : '결핍 진단'}</div>
+      <h2 class="q-title">${q.q}</h2>
+      <div class="q-options">${optsHtml}</div>
+    `);
+    el.querySelectorAll('.q-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        answers[qIdx] = idx;
+        el.querySelectorAll('.q-option').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        nextBtn.disabled = false;
+      });
+    });
+    transitionTo(el);
+    nextBtn.textContent = qIdx === QUESTIONS.length - 1 ? '분석하기' : '다음';
+    nextBtn.classList.remove('cta-gradient');
+    nextBtn.disabled = sel === null;
+  }
+
+  function renderAnalyzing() {
+    const el = screenEl(`
+      <div class="analyzing">
+        <div class="analyze-spinner"></div>
+        <div class="analyze-title">당신의 마음을 읽는 중...</div>
+        <div class="analyze-sub">16유형 중 매칭도가 가장 높은 3명을 찾고 있어요</div>
+        <div class="analyze-log" id="analyzeLog"></div>
+      </div>
+    `);
+    transitionTo(el);
+    const logs = [
+      '결핍 점수 계산 중...',
+      'MBTI 성향 반영 중...',
+      '16유형 매칭도 정렬 중...',
+      '추천 캐릭터 준비 중...',
+    ];
+    const logEl = el.querySelector('#analyzeLog');
+    let i = 0;
+    const tick = () => {
+      if (i >= logs.length) { setTimeout(showResult, 400); return; }
+      logEl.textContent = logs[i++];
+      setTimeout(tick, 550);
+    };
+    tick();
+  }
+
+  function computeTop3() {
+    // reset scores
+    Object.keys(deficitScores).forEach(k => deficitScores[k] = 0);
+    // tally deficit answers
+    for (let i = 0; i < 4; i++) {
+      const ans = answers[i];
+      if (ans === null) continue;
+      const opt = QUESTIONS[i].options[ans];
+      Object.entries(opt.deficits || {}).forEach(([k, v]) => { deficitScores[k] += v; });
+    }
+    // compute MBTI
+    mbti = [
+      QUESTIONS[4].options[answers[4] ?? 0].mbti,
+      QUESTIONS[5].options[answers[5] ?? 0].mbti,
+      QUESTIONS[6].options[answers[6] ?? 0].mbti,
+      QUESTIONS[7].options[answers[7] ?? 0].mbti,
+    ];
+    // pick top 3 deficits
+    return Object.entries(deficitScores)
+      .filter(([,v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([k]) => k);
+  }
+
+  function renderResult() {
+    const top3 = computeTop3();
+    const mbtiStr = mbti.join('');
+    const mbtiLabel = MBTI_LABELS[mbtiStr] || '';
+
+    const cardsHtml = top3.map((def, i) => {
+      const c = CHARACTERS[def];
+      if (!c) return '';
+      return `
+        <div class="match-card ${i === 0 ? 'top' : ''}">
+          <div class="match-thumb">
+            <video src="${VIDEOS[c.v]}" autoplay muted loop playsinline preload="metadata"></video>
+          </div>
+          <div class="match-body">
+            <div class="match-name-row">
+              <span class="match-name">${c.name}</span>
+              <span class="match-age">${c.age}</span>
+            </div>
+            <span class="match-type">${def}</span>
+            <div class="match-hook">"${c.hook}"</div>
+            <div class="match-reason">${c.reason}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const el = screenEl(`
+      <div class="result">
+        <div class="result-head">
+          <div class="result-eyebrow">당신의 매칭 결과</div>
+          <h2 class="result-title">${top3[0]} · ${top3[1]} 성향이 강해요</h2>
+          <p class="result-sub">16유형 중 매칭도 상위 3명을 골라왔어요</p>
+          ${mbtiLabel ? `<div class="mbti-badge">MBTI <b>${mbtiStr}</b> · ${mbtiLabel}</div>` : ''}
+        </div>
+        <div class="match-cards">${cardsHtml}</div>
+      </div>
+    `);
+    transitionTo(el);
+    // show CTA
+    footer.style.display = 'block';
+    nextBtn.textContent = `${CHARACTERS[top3[0]].name}한테 가기`;
+    nextBtn.classList.add('cta-gradient');
+    nextBtn.disabled = false;
+    nextBtn.onclick = () => {
+      nextBtn.textContent = '연결 중...';
+      setTimeout(() => {
+        // in a real app: navigate to chat. here: restart flow
+        alert(`${CHARACTERS[top3[0]].name}과의 첫 대화로 이동\n\n(실제로는 HomeTikTok 또는 Chat 화면으로 라우팅)`);
+        // reset
+        step = 0;
+        answers.fill(null);
+        nextBtn.onclick = onNext;
+        nextBtn.classList.remove('cta-gradient');
+        render();
+      }, 1200);
+    };
+  }
+
+  function showResult() { step = 10; updateProgress(); renderResult(); }
+
+  function render() {
+    updateProgress();
+    if (step === 0) renderWelcome();
+    else if (step >= 1 && step <= QUESTIONS.length) renderQuestion(step - 1);
+    else if (step === 9) renderAnalyzing();
+    else if (step === 10) renderResult();
+  }
+
+  // ── Nav handlers ──────────────────────────
+  function onNext() {
+    if (step === 0) { step = 1; render(); return; }
+    if (step >= 1 && step < QUESTIONS.length) { step++; render(); return; }
+    if (step === QUESTIONS.length) { step = 9; render(); return; }
+  }
+  function onBack() {
+    if (step > 1 && step <= QUESTIONS.length) { step--; render(); return; }
+  }
+  function onSkip() {
+    // Skip to analyzing with whatever's answered (unanswered questions contribute 0)
+    step = 9; render();
+  }
+
+  nextBtn.addEventListener('click', onNext);
+  backBtn.addEventListener('click', onBack);
+  skipBtn.addEventListener('click', onSkip);
+
+  render();
+</script>
+</body>
+</html>

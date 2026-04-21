@@ -1,0 +1,161 @@
+/* Rizz Design System — Core tokens
+   Source: Figma Foundations (Variables Documentation), generated 03/24/2026
+*/
+
+/* ── Fonts ──────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap');
+/* Pretendard (Korean sans) via cdn.jsdelivr */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css');
+
+:root {
+  /* ── Primary (CTA orange — brand) ─────────────────── */
+  --color-primary-50:  #F9F6F5;  /* Background hover */
+  --color-primary-100: #F5E9E5;  /* Active background */
+  --color-primary-200: #F0D2C5;  /* Light border */
+  --color-primary-300: #EFAF93;  /* Border */
+  --color-primary-400: #F68555;  /* Secondary button */
+  --color-primary-500: #FF5E19;  /* ★ Base CTA */
+  --color-primary-600: #E54400;  /* Hover */
+  --color-primary-700: #B23500;  /* Pressed */
+  --color-primary-800: #782806;  /* Deep accent */
+  --color-primary-900: #4D1D08;
+  --color-primary-950: #2A1207;
+
+  /* ── Chat (chat-ui specific tinted scale) ─────────── */
+  --color-chat-50:  #F9F6F5;
+  --color-chat-100: #F4E9E5;
+  --color-chat-200: #EED2C7;
+  --color-chat-300: #EBAE97;
+  --color-chat-400: #EF835C;
+  --color-chat-500: #F66733;  /* ★ Chat base */
+  --color-chat-600: #F14304;
+  --color-chat-700: #BA3708;
+  --color-chat-800: #832C0C;
+  --color-chat-900: #59210D;
+  --color-chat-950: #37170C;
+
+  /* Sent bubble (cream-peach) */
+  --color-accent-sent: #FFCB97;
+  --color-accent-success: #34C759;
+
+  /* ── Neutrals ─────────────────────────────────────── */
+  --color-gray-50:  #FAFAFA;
+  --color-gray-100: #F5F5F5;
+  --color-gray-200: #EFEFEF;
+  --color-gray-300: #DEDEDE;
+  --color-gray-400: #BEBEBE;
+  --color-gray-500: #9E9E9E;
+  --color-gray-600: #8C8C8C;
+  --color-gray-700: #757575;
+  --color-gray-800: #535353;
+  --color-gray-900: #363636;
+  --color-gray-950: #1A1A1A;  /* ★ default text */
+
+  /* ── Semantic (BG + surface) ──────────────────────── */
+  --color-bg-default: #FFFFFF;
+  --color-bg-screen:  #F9F9F9;
+
+  /* Gradient — used on brand surfaces, VIP badge, splashes */
+  --gradient-brand: linear-gradient(180deg, #FF3419 0%, #FF5E19 69%);
+
+  /* ── Foreground tokens (semantic) ─────────────────── */
+  --fg-1: var(--color-gray-950); /* primary text */
+  --fg-2: var(--color-gray-800); /* secondary */
+  --fg-3: var(--color-gray-700); /* tertiary */
+  --fg-4: var(--color-gray-500); /* disabled / hint */
+  --fg-onprimary: #FFFFFF;
+
+  /* ── Borders ──────────────────────────────────────── */
+  --border-1: var(--color-gray-200);
+  --border-2: var(--color-gray-300);
+  --border-input: var(--color-gray-400);
+  --border-strong: var(--color-gray-950);
+
+  /* ── Radii ────────────────────────────────────────── */
+  --radius-button: 8px;
+  --radius-card: 12px;
+  --radius-input: 20px;
+  --radius-chip: 1000px;     /* pill */
+  --radius-popup: 20px;
+  --radius-bubble: 20px 16px 4px 20px; /* sent shape */
+  --radius-bubble-received: 4px 20px 20px 20px;
+
+  /* ── Spacing (base) ───────────────────────────────── */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+
+  /* ── Shadows ──────────────────────────────────────── */
+  --shadow-card: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 12px rgba(26, 26, 26, 0.04);
+  --shadow-popup: 0 12px 40px rgba(26, 26, 26, 0.12);
+  --shadow-nav: 0 -1px 0 var(--color-gray-200);
+
+  /* ── Fonts ─────────────────────────────────────── */
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+               'Apple SD Gothic Neo', 'Noto Sans KR', 'Segoe UI', Roboto, sans-serif;
+  --font-latin: 'Inter', var(--font-sans);
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  /* Letter spacing used in Figma */
+  --track-tight: -0.250px;
+  --track-tighter: -0.314px;
+  --track-body: -0.003em;
+
+  /* ── Type scale (raw tokens) ──────────────────────── */
+  --fs-10: 10px;
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-20: 20px;
+  --fs-22: 22px;
+  --fs-28: 28px;
+  --fs-display: 45.86px;
+
+  /* ── Easing / motion ──────────────────────────────── */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0, 0, 1.2);
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 360ms;
+}
+
+/* ── Semantic type classes ─────────────────────────────── */
+/* Defaults mirror the most common pairings from the Figma file */
+
+html, body {
+  font-family: var(--font-sans);
+  color: var(--fg-1);
+  background: var(--color-bg-screen);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: var(--track-body);
+}
+
+.rz-h1 { font-family: var(--font-sans); font-weight: 800; font-size: 28px;  line-height: 1.2;  letter-spacing: var(--track-tight); color: var(--fg-1); }
+.rz-h2 { font-family: var(--font-sans); font-weight: 700; font-size: 22px;  line-height: 1.25; letter-spacing: var(--track-tight); color: var(--fg-1); }
+.rz-h3 { font-family: var(--font-sans); font-weight: 700; font-size: 20px;  line-height: 1.3;  letter-spacing: var(--track-tight); color: var(--fg-1); }
+.rz-title-lg { font-family: var(--font-sans); font-weight: 700; font-size: 18px; line-height: 24px; letter-spacing: var(--track-tight); color: var(--fg-1); }
+.rz-title    { font-family: var(--font-sans); font-weight: 700; font-size: 16px; line-height: 20px; letter-spacing: var(--track-tight); color: var(--fg-1); }
+.rz-body     { font-family: var(--font-sans); font-weight: 400; font-size: 16px; line-height: 20px; letter-spacing: var(--track-body);  color: var(--fg-1); }
+.rz-body-sm  { font-family: var(--font-sans); font-weight: 400; font-size: 14px; line-height: 20px; letter-spacing: var(--track-body);  color: var(--fg-2); }
+.rz-caption  { font-family: var(--font-sans); font-weight: 400; font-size: 13px; line-height: 18px; letter-spacing: var(--track-tight); color: var(--fg-3); }
+.rz-micro    { font-family: var(--font-sans); font-weight: 400; font-size: 11px; line-height: 1.0;  letter-spacing: var(--track-tighter); color: var(--fg-3); }
+.rz-price    { font-family: var(--font-sans); font-weight: 700; font-size: 12px; line-height: 1.4;  color: var(--fg-1); }
+
+.rz-mono     { font-family: var(--font-mono); font-size: 13px; line-height: 1.45; color: var(--fg-2); }
+.rz-mono-lg  { font-family: var(--font-mono); font-size: 16px; font-weight: 700; line-height: 1.0; color: var(--fg-1); }
+
+/* Button label */
+.rz-btn-label { font-family: var(--font-sans); font-weight: 700; font-size: 18px; line-height: 24px; letter-spacing: var(--track-tight); }
+.rz-btn-label-sm { font-family: var(--font-sans); font-weight: 700; font-size: 14px; line-height: 16px; letter-spacing: var(--track-tight); }
+
+/* Chip label */
+.rz-chip-label { font-family: var(--font-sans); font-weight: 700; font-size: 16px; line-height: 20px; letter-spacing: var(--track-tight); }
