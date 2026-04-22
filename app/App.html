@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rizz · App (전체 플로우)</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script>if (location.hash === '#embed') document.documentElement.setAttribute('data-embed','1');</script>
+<style>
+  html[data-embed="1"] body { background: transparent !important; margin: 0 !important; padding: 0 !important; }
+  html[data-embed="1"] .page { padding: 0 !important; min-height: 0 !important; gap: 0 !important; }
+  html[data-embed="1"] .page > *:not(.phone) { display: none !important; }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #0E0E10; font-family: var(--font-sans); letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
+
+  .page { min-height: 100vh; padding: 56px 48px 120px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  .page-head { max-width: 560px; text-align: center; color: #EDEEF1; }
+  .eyebrow { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-primary-500); margin-bottom: 12px; }
+  .page-h1 { font-weight: 800; font-size: 32px; letter-spacing: -0.6px; line-height: 1.15; margin: 0 0 10px; color: #fff; }
+  .page-sub { font-size: 14px; color: rgba(237,238,241,0.6); letter-spacing: -0.25px; line-height: 1.55; }
+
+  /* Phone */
+  .phone { width: 393px; height: 852px; border-radius: 47px; border: 10px solid #1A1A1A; box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.1); overflow: hidden; background: #fff; flex-shrink: 0; position: relative; display: flex; flex-direction: column; }
+  .island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 80; }
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px 0 32px; font-family: -apple-system, system-ui; color: var(--color-gray-950); flex-shrink: 0; position: relative; z-index: 70; background: #fff; }
+  .status-bar .time { font-size: 15.72px; font-weight: 600; letter-spacing: -0.4px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+
+  /* Stage container */
+  .stage { position: absolute; inset: 0; padding-top: 44px; background: #fff; display: none; flex-direction: column; }
+  .stage.active { display: flex; }
+
+  /* Onboarding header (back + progress + skip) */
+  .ob-head {
+    height: 46px; display: flex; align-items: center; gap: 12px;
+    padding: 0 18px; flex-shrink: 0; background: #fff;
+  }
+  .ob-back, .ob-skip {
+    background: transparent; border: 0; cursor: pointer; padding: 6px 4px;
+    font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-700);
+    letter-spacing: -0.25px;
+  }
+  .ob-back { width: 32px; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .ob-back svg { stroke: var(--color-gray-950); }
+  .ob-back.hidden { visibility: hidden; }
+  .ob-progress {
+    flex: 1; height: 4px; background: var(--color-gray-100); border-radius: 100px; overflow: hidden;
+  }
+  .ob-progress-fill {
+    height: 100%; background: var(--gradient-brand); border-radius: 100px;
+    transition: width .4s cubic-bezier(0.2,0,0,1);
+  }
+  .ob-skip {
+    color: var(--color-gray-500); font-weight: 500;
+    padding: 6px 8px;
+  }
+
+  .ob-body { flex: 1; overflow-y: auto; padding: 8px 24px 16px; }
+  .ob-title {
+    font-family: var(--font-sans); font-weight: 800; font-size: 22px; line-height: 1.3;
+    letter-spacing: -0.4px; color: var(--color-gray-950);
+    margin: 8px 0 6px;
+  }
+  .ob-subtitle {
+    font-family: var(--font-sans); font-size: 13px; line-height: 19px;
+    letter-spacing: -0.25px; color: var(--color-gray-700);
+    margin-bottom: 24px;
+  }
+
+  .ob-foot { padding: 12px 18px 24px; background: #fff; flex-shrink: 0; }
+  .ob-cta {
+    width: 100%; height: 55px; border: 0; border-radius: 1000px;
+    background: var(--color-primary-500); color: #fff;
+    font-family: var(--font-sans); font-weight: 700; font-size: 17px; letter-spacing: -0.25px;
+    cursor: pointer; transition: background .14s, transform .1s;
+  }
+  .ob-cta:active { transform: scale(0.98); }
+  .ob-cta:disabled { background: var(--color-gray-300); color: #F9F6F5; cursor: not-allowed; }
+  .ob-cta.gradient { background: var(--gradient-brand); box-shadow: 0 6px 18px rgba(255,94,25,0.32); }
+
+  /* ─── Stage 1: 캐릭터 5명 (큰 카드, 가로 스와이프) ─── */
+  .char-deck {
+    display: flex; gap: 14px; padding: 10px 4px 16px; overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+  .char-deck::-webkit-scrollbar { display: none; }
+  .char-card {
+    flex: 0 0 240px; aspect-ratio: 240 / 360;
+    border-radius: 18px; overflow: hidden; position: relative;
+    cursor: pointer; scroll-snap-align: center;
+    background: var(--color-gray-100);
+    border: 3px solid transparent; transition: border-color .15s;
+  }
+  .char-card.selected { border-color: var(--color-primary-500); }
+  .char-card video, .char-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .char-card .char-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.85) 100%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 16px 14px; color: #fff;
+  }
+  .char-name-row { display: flex; align-items: baseline; gap: 6px; }
+  .char-name { font-family: var(--font-sans); font-weight: 800; font-size: 18px; letter-spacing: -0.4px; }
+  .char-age { font-family: var(--font-sans); font-size: 13px; opacity: 0.85; }
+  .char-tag { font-family: var(--font-sans); font-size: 12px; opacity: 0.85; margin-top: 4px; letter-spacing: -0.25px; }
+  .char-check {
+    position: absolute; top: 12px; right: 12px; z-index: 3;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; font-weight: 700;
+    transition: all .15s;
+  }
+  .char-card.selected .char-check {
+    background: var(--color-primary-500); border-color: #fff;
+  }
+  .deck-hint {
+    text-align: center; font-family: var(--font-sans); font-size: 11px;
+    color: var(--color-gray-500); margin-top: 6px; letter-spacing: -0.25px;
+  }
+
+  /* ─── Stage 2: 분위기 (자극적 vs 로맨스) ─── */
+  .mood-cards { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+  .mood-card {
+    border-radius: 16px; overflow: hidden; position: relative;
+    height: 160px; cursor: pointer;
+    border: 3px solid transparent; transition: border-color .15s;
+  }
+  .mood-card.selected { border-color: var(--color-primary-500); }
+  .mood-card .mood-bg {
+    position: absolute; inset: 0; z-index: 1;
+  }
+  .mood-card.romance .mood-bg { background: linear-gradient(135deg, #FFC1D6 0%, #FF7AAB 50%, #E15B8A 100%); }
+  .mood-card.spicy .mood-bg { background: linear-gradient(135deg, #FF8845 0%, #E54400 50%, #B23500 100%); }
+  .mood-card .mood-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    padding: 20px 22px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    color: #fff;
+  }
+  .mood-emoji { font-size: 38px; line-height: 1; }
+  .mood-text { display: flex; flex-direction: column; gap: 4px; }
+  .mood-title { font-family: var(--font-sans); font-weight: 800; font-size: 22px; letter-spacing: -0.4px; }
+  .mood-desc { font-family: var(--font-sans); font-size: 13px; letter-spacing: -0.25px; opacity: 0.92; line-height: 18px; }
+
+  /* ─── Stage 3: 필요한 것 (칩 다중 선택) ─── */
+  .need-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+  .need-chip {
+    padding: 12px 16px; border-radius: 100px;
+    background: #fff; border: 1.5px solid var(--color-gray-200);
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--color-gray-950); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all .14s;
+  }
+  .need-chip:hover { border-color: var(--color-gray-400); }
+  .need-chip.selected {
+    background: rgba(255,94,25,0.1); border-color: var(--color-primary-500);
+    color: var(--color-primary-700); font-weight: 700;
+  }
+  .need-chip .chip-emoji { font-size: 16px; }
+  .need-counter { text-align: center; font-family: var(--font-sans); font-size: 12px; color: var(--color-gray-500); margin: 16px 0 4px; letter-spacing: -0.25px; }
+  .need-counter b { color: var(--color-primary-500); font-weight: 700; }
+
+  /* ─── Stage 4: 필수 정보 폼 ─── */
+  .ob-field { margin-bottom: 22px; }
+  .ob-field-label { font-family: var(--font-sans); font-weight: 700; font-size: 14px; color: var(--color-gray-950); letter-spacing: -0.25px; margin-bottom: 10px; display: block; }
+  .ob-input {
+    width: 100%; height: 48px; padding: 0 14px;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--color-gray-950);
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-100); border-radius: 10px; outline: none;
+  }
+  .ob-input:focus { border-color: var(--color-primary-500); background: #fff; }
+  .ob-dob-row { display: flex; gap: 8px; }
+  .ob-dob-row select {
+    flex: 1; height: 48px; padding: 0 14px;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--color-gray-950); background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-100); border-radius: 10px;
+    appearance: none; -webkit-appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c8c8c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+  }
+  .ob-radio-row { display: flex; gap: 10px; }
+  .ob-radio {
+    flex: 1; height: 80px;
+    border: 1.5px solid var(--color-gray-200); background: #fff;
+    border-radius: 12px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; transition: all .15s;
+    font-family: var(--font-sans);
+  }
+  .ob-radio.selected { border-color: var(--color-primary-500); background: rgba(255,94,25,0.06); }
+  .ob-radio .icon { font-size: 22px; line-height: 1; font-weight: 600; }
+  .ob-radio.male .icon { color: #4A8FF5; }
+  .ob-radio.female .icon { color: #E15B8A; }
+  .ob-radio .lbl { font-size: 13px; font-weight: 700; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .ob-radio.selected .lbl { color: var(--color-primary-500); }
+
+  .ob-tagline {
+    margin-top: 12px; padding: 12px 16px;
+    background: var(--color-gray-50); border-radius: 12px;
+    font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-700);
+    letter-spacing: -0.25px; line-height: 18px; text-align: center;
+  }
+  .ob-tagline b { color: var(--color-primary-500); font-weight: 700; }
+
+  /* ─── Stage 5: 유서현 VN 스토리 ─── */
+  .vn { position: absolute; inset: 0; background: #000; display: none; flex-direction: column; }
+  .vn.active { display: flex; }
+  .vn-bg { position: absolute; inset: 0; z-index: 1; cursor: pointer; }
+  .vn-bg img, .vn-bg video { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .vn-top {
+    position: relative; z-index: 10;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 56px 16px 14px;
+  }
+  .vn-back-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+    color: #fff; font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .vn-skip-btn {
+    padding: 7px 14px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+    color: #fff; font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+    cursor: pointer; letter-spacing: -0.25px;
+  }
+  .vn-area {
+    position: relative; z-index: 10; margin-top: auto;
+    padding: 0 16px 24px;
+    display: flex; flex-direction: column;
+  }
+  .vn-dialogue { cursor: pointer; }
+  .vn-speaker {
+    display: inline-block; padding: 5px 14px; border-radius: 20px;
+    font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+    letter-spacing: -0.25px;
+    margin-bottom: -14px; position: relative; z-index: 1;
+  }
+  .vn-speaker.npc { background: var(--color-primary-500); color: #fff; }
+  .vn-speaker.user { background: #1a1a1a; color: #fff; align-self: flex-end; margin-left: auto; display: block; width: fit-content; }
+  .vn-text {
+    border-radius: 14px; padding: 18px 20px;
+    font-family: var(--font-sans); font-size: 15px; line-height: 1.6;
+    letter-spacing: -0.25px; min-height: 60px;
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(6px);
+    color: var(--color-gray-950);
+    animation: vnFade .3s ease;
+  }
+  .vn-text.narration { background: rgba(0,0,0,0.78); color: #fff; font-weight: 500; }
+  @keyframes vnFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .vn-tap {
+    text-align: right; padding: 6px 4px 0;
+    font-family: var(--font-sans); font-size: 11px;
+    color: rgba(255,255,255,0.7); animation: blink 1.4s infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .vn-choices { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+  .vn-choice {
+    padding: 14px 16px; border-radius: 12px;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+    border: none; cursor: pointer; text-align: left;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--color-gray-950); letter-spacing: -0.25px;
+    animation: vnFade .35s both;
+  }
+  .vn-choice:active { transform: scale(0.98); }
+
+  /* VN sent photo (e.g. 카페 셀카) */
+  .vn-sent-photo {
+    width: 200px; align-self: flex-start;
+    border-radius: 18px 18px 18px 6px; overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    margin-bottom: 8px;
+  }
+  .vn-sent-photo img, .vn-sent-photo video { width: 100%; display: block; aspect-ratio: 3/4; object-fit: cover; }
+
+  /* ─── Home: 현수 카톡 (5명 추천) ─── */
+  .home-stage { background: #fff; }
+  .home-header-bar {
+    height: 46px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px; background: #fff; border-bottom: 1px solid var(--color-gray-100);
+    flex-shrink: 0;
+  }
+  .home-header-title {
+    font-family: var(--font-sans); font-weight: 800; font-size: 17px;
+    color: var(--color-gray-950); letter-spacing: -0.4px;
+  }
+  .home-chat-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; background: #fff;
+    border-bottom: 1px solid var(--color-gray-100);
+    flex-shrink: 0;
+  }
+  .home-ch-avatar {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 17px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    background: linear-gradient(135deg, hsl(28, 55%, 70%), hsl(28, 45%, 50%));
+  }
+  .home-ch-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .home-ch-name { font-family: var(--font-sans); font-weight: 700; font-size: 15px; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .home-ch-sub { font-family: var(--font-sans); font-size: 11px; color: var(--color-gray-500); letter-spacing: -0.3px; display: flex; align-items: center; gap: 4px; }
+  .home-ch-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent-success); }
+
+  .home-body { flex: 1; overflow-y: auto; background: var(--color-gray-50); }
+  .home-chat { padding: 14px 14px 20px; display: flex; flex-direction: column; gap: 4px; }
+
+  .bubble-recv {
+    align-self: flex-start; max-width: 260px;
+    padding: 9px 14px; background: #fff; color: var(--color-gray-950);
+    border-radius: 4px 18px 18px 18px;
+    font-family: var(--font-latin); font-size: 15px; line-height: 20px;
+    letter-spacing: -0.003em; word-break: break-word;
+    border: 1px solid var(--color-gray-100); margin-bottom: 2px;
+  }
+  .bubble-sent {
+    align-self: flex-end; max-width: 240px;
+    padding: 9px 14px; background: var(--color-accent-sent); color: var(--color-gray-950);
+    border-radius: 18px 18px 4px 18px;
+    font-family: var(--font-latin); font-size: 15px; line-height: 20px;
+    letter-spacing: -0.003em; margin-top: 4px; margin-bottom: 6px;
+  }
+  .typing-bubble {
+    align-self: flex-start; padding: 12px 14px;
+    background: #fff; border-radius: 4px 18px 18px 18px;
+    display: inline-flex; gap: 4px; align-items: center;
+    border: 1px solid var(--color-gray-100); margin-top: 4px; margin-bottom: 4px;
+  }
+  .typing-bubble span { width: 6px; height: 6px; border-radius: 50%; background: var(--color-gray-500); }
+  .typing-bubble span:nth-child(1) { animation: tBounce 1.2s infinite 0s; }
+  .typing-bubble span:nth-child(2) { animation: tBounce 1.2s infinite .18s; }
+  .typing-bubble span:nth-child(3) { animation: tBounce 1.2s infinite .36s; }
+  @keyframes tBounce { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+  .home-rec-card {
+    align-self: flex-start; width: 220px;
+    border-radius: 18px; overflow: hidden; position: relative;
+    aspect-ratio: 220 / 320;
+    box-shadow: 0 4px 14px rgba(26,26,26,0.12);
+    background: #1A1A1E; margin-top: 8px; margin-bottom: 6px;
+  }
+  .home-rec-card video, .home-rec-card img.thumb {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top;
+  }
+  .home-rec-info {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+    padding: 28px 14px 12px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.82));
+    color: #fff;
+  }
+  .home-rec-name-row { display: flex; align-items: baseline; gap: 6px; }
+  .home-rec-name { font-family: var(--font-sans); font-weight: 800; font-size: 18px; letter-spacing: -0.4px; }
+  .home-rec-age { font-family: var(--font-sans); font-size: 13px; opacity: 0.85; }
+  .home-rec-tag { font-family: var(--font-sans); font-size: 11px; opacity: 0.78; letter-spacing: -0.25px; margin-top: 2px; }
+
+  .home-choices {
+    align-self: stretch; display: flex; gap: 8px; margin: 6px 0 10px;
+  }
+  .home-choices .btn-accept {
+    flex: 1; padding: 12px 14px; background: var(--gradient-brand); border: none;
+    border-radius: 12px; cursor: pointer;
+    font-family: var(--font-sans); font-weight: 700; font-size: 14px; color: #fff;
+    letter-spacing: -0.25px; box-shadow: 0 4px 14px rgba(255,94,25,0.32);
+  }
+  .home-choices .btn-accept:active { transform: scale(0.98); }
+  .home-choices .btn-reject {
+    flex: 1; padding: 12px 14px; background: #fff;
+    border: 1px solid var(--color-gray-200); border-radius: 12px; cursor: pointer;
+    font-family: var(--font-sans); font-weight: 600; font-size: 14px;
+    color: var(--color-gray-700); letter-spacing: -0.25px;
+  }
+  .home-choices .btn-reject:active { transform: scale(0.98); }
+
+  .home-start-btn {
+    align-self: stretch;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; background: var(--gradient-brand); color: #fff;
+    border: 0; border-radius: 12px; cursor: pointer;
+    margin: 8px 0; box-shadow: 0 6px 18px rgba(255,94,25,0.32);
+    font-family: var(--font-sans);
+  }
+  .home-start-btn:active { transform: scale(0.98); }
+  .home-start-btn .lbl-main { font-weight: 700; font-size: 15px; letter-spacing: -0.25px; }
+  .home-start-btn .lbl-arrow { font-size: 20px; opacity: 0.9; }
+
+  .system-note {
+    align-self: center; padding: 7px 14px;
+    background: var(--color-gray-100); border-radius: 1000px;
+    font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+    color: var(--color-gray-700); letter-spacing: -0.25px;
+    margin: 10px 0 6px;
+  }
+
+  /* Bottom nav (Figma spec: 2477:12940) */
+  .bottom-nav {
+    background: #fff; border-top: 1px solid #ebebeb;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 29px 28px;
+    flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .nav-item {
+    border: 0; background: transparent; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 0; padding: 0;
+    min-width: 30px;
+  }
+  .nav-item svg { stroke: #8c8c8c; color: #8c8c8c; flex-shrink: 0; }
+  .nav-item .nav-label {
+    font-family: var(--font-sans); font-size: 13px; line-height: 20px;
+    letter-spacing: -0.0325px; font-weight: 400; color: #8c8c8c;
+    margin-top: 0;
+  }
+  .nav-item.active svg { stroke: var(--color-primary-500); color: var(--color-primary-500); }
+  .nav-item.active .nav-label { color: var(--color-primary-500); font-weight: 600; }
+  .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 139px; height: 5px; border-radius: 100px; background: rgba(0,0,0,0.3); }
+
+  /* Dev jumper */
+  .dev-jumper { position: fixed; bottom: 20px; right: 20px; z-index: 200; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px; display: flex; gap: 4px; flex-wrap: wrap; max-width: 320px; }
+  .dev-jumper .lbl { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 9px; color: rgba(237,238,241,0.5); padding: 0 6px; align-self: center; text-transform: uppercase; letter-spacing: 1px; }
+  .dev-jumper button { padding: 6px 9px; background: rgba(237,238,241,0.06); border: 1px solid transparent; border-radius: 6px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 10px; color: rgba(237,238,241,0.7); cursor: pointer; }
+  .dev-jumper button.active { background: rgba(255,94,25,0.15); border-color: rgba(255,94,25,0.4); color: #FF9570; }
+  html[data-embed="1"] .dev-jumper { display: none; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <div class="eyebrow">Rizz · 풀 플로우</div>
+    <h1 class="page-h1">온보딩 → 홈 (5명 추천)</h1>
+    <p class="page-sub">캐릭터 선택 → 분위기 → 필요한 것 → 필수 정보 → (옵션) 유서현 짧은 스토리 → 홈 (현수 카톡 추천). 각 단계 건너뛰기 가능, 코인 과금 없음.</p>
+  </div>
+
+  <div class="phone">
+    <div class="island"></div>
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <svg width="18" height="10" viewBox="0 0 18 10"><rect x="0" y="6" width="3" height="4" rx="0.5" fill="#1A1A1A"/><rect x="5" y="4" width="3" height="6" rx="0.5" fill="#1A1A1A"/><rect x="10" y="2" width="3" height="8" rx="0.5" fill="#1A1A1A"/><rect x="15" y="0" width="3" height="10" rx="0.5" fill="#1A1A1A"/></svg>
+        <svg width="17" height="11" viewBox="0 0 17 11"><path d="M8.5 2.2C10.8 2.2 12.9 3.1 14.4 4.6L15.5 3.5C13.7 1.7 11.2 0.5 8.5 0.5S3.3 1.7 1.5 3.5L2.6 4.6C4.1 3.1 6.2 2.2 8.5 2.2z" fill="#1A1A1A"/><circle cx="8.5" cy="9.5" r="1.5" fill="#1A1A1A"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#1A1A1A" fill="none"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="#1A1A1A"/><rect x="22.5" y="4" width="1.5" height="4" rx="0.5" fill="#1A1A1A" opacity="0.5"/></svg>
+      </div>
+    </div>
+
+    <!-- ── Stage 1: 캐릭터 선택 ── -->
+    <div class="stage active" data-stg="char">
+      <div class="ob-head">
+        <button class="ob-back hidden"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <div class="ob-progress"><div class="ob-progress-fill" style="width:20%"></div></div>
+        <button class="ob-skip" data-skip="char">건너뛰기</button>
+      </div>
+      <div class="ob-body">
+        <h2 class="ob-title">누가 제일 끌려?</h2>
+        <p class="ob-subtitle">맘에 드는 한 명을 골라봐. 너한테 맞는 애들 찾는 데 참고할게.</p>
+        <div class="char-deck" id="charDeck"></div>
+        <p class="deck-hint">← 좌우로 스와이프 ·  탭하면 선택 →</p>
+      </div>
+      <div class="ob-foot"><button class="ob-cta gradient" id="charNext" disabled>다음</button></div>
+    </div>
+
+    <!-- ── Stage 2: 분위기 ── -->
+    <div class="stage" data-stg="mood">
+      <div class="ob-head">
+        <button class="ob-back" data-back="char"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <div class="ob-progress"><div class="ob-progress-fill" style="width:40%"></div></div>
+        <button class="ob-skip" data-skip="mood">건너뛰기</button>
+      </div>
+      <div class="ob-body">
+        <h2 class="ob-title">어떤 분위기 좋아?</h2>
+        <p class="ob-subtitle">취향 톤을 알면 더 정확하게 매칭할 수 있어.</p>
+        <div class="mood-cards">
+          <button class="mood-card romance" data-mood="romance">
+            <div class="mood-bg"></div>
+            <div class="mood-overlay">
+              <div class="mood-emoji">💕</div>
+              <div class="mood-text">
+                <div class="mood-title">로맨스</div>
+                <div class="mood-desc">설레고 따뜻한 감정 위주, 천천히 깊어지는 관계</div>
+              </div>
+            </div>
+          </button>
+          <button class="mood-card spicy" data-mood="spicy">
+            <div class="mood-bg"></div>
+            <div class="mood-overlay">
+              <div class="mood-emoji">🔥</div>
+              <div class="mood-text">
+                <div class="mood-title">자극적</div>
+                <div class="mood-desc">긴장감 있는 전개, 솔직하고 대담한 케미</div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="ob-foot"><button class="ob-cta gradient" id="moodNext" disabled>다음</button></div>
+    </div>
+
+    <!-- ── Stage 3: 필요한 것 ── -->
+    <div class="stage" data-stg="needs">
+      <div class="ob-head">
+        <button class="ob-back" data-back="mood"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <div class="ob-progress"><div class="ob-progress-fill" style="width:60%"></div></div>
+        <button class="ob-skip" data-skip="needs">건너뛰기</button>
+      </div>
+      <div class="ob-body">
+        <h2 class="ob-title">요즘 제일 필요한 건?</h2>
+        <p class="ob-subtitle">여러 개 골라도 돼. 너한테 진짜 맞는 캐릭터를 골라줄게.</p>
+        <div class="need-chips">
+          <button class="need-chip" data-need="warmth"><span class="chip-emoji">🌿</span>따뜻한 위로</button>
+          <button class="need-chip" data-need="rest"><span class="chip-emoji">🏠</span>안식처</button>
+          <button class="need-chip" data-need="thrill"><span class="chip-emoji">🔥</span>설레는 자극</button>
+          <button class="need-chip" data-need="escape"><span class="chip-emoji">🌙</span>현실 도피</button>
+          <button class="need-chip" data-need="love"><span class="chip-emoji">💕</span>진짜 사랑</button>
+          <button class="need-chip" data-need="fun"><span class="chip-emoji">✨</span>같이 웃기</button>
+          <button class="need-chip" data-need="listen"><span class="chip-emoji">👂</span>내 얘기 들어줄 사람</button>
+          <button class="need-chip" data-need="distract"><span class="chip-emoji">🎮</span>잠깐 잊을 거리</button>
+        </div>
+      </div>
+      <div class="ob-foot">
+        <div class="need-counter"><b id="needCount">0</b>개 선택됨</div>
+        <button class="ob-cta gradient" id="needsNext">다음</button>
+      </div>
+    </div>
+
+    <!-- ── Stage 4: 필수 정보 ── -->
+    <div class="stage" data-stg="info">
+      <div class="ob-head">
+        <button class="ob-back" data-back="needs"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <div class="ob-progress"><div class="ob-progress-fill" style="width:80%"></div></div>
+        <span></span>
+      </div>
+      <div class="ob-body">
+        <h2 class="ob-title">너 정보만 알려줘</h2>
+        <p class="ob-subtitle">이거 있어야 너한테 딱 맞는 애 보여줄 수 있어.</p>
+
+        <div class="ob-field">
+          <label class="ob-field-label">이름 (또는 닉네임)</label>
+          <input type="text" class="ob-input" id="infoName" placeholder="현수가 부를 이름" maxlength="12" />
+        </div>
+
+        <div class="ob-field">
+          <label class="ob-field-label">생년월일</label>
+          <div class="ob-dob-row">
+            <select id="infoY"></select>
+            <select id="infoM"></select>
+            <select id="infoD"></select>
+          </div>
+        </div>
+
+        <div class="ob-field">
+          <label class="ob-field-label">내 성별</label>
+          <div class="ob-radio-row">
+            <button class="ob-radio male" data-mygender="male"><span class="icon">♂</span><span class="lbl">남성</span></button>
+            <button class="ob-radio female" data-mygender="female"><span class="icon">♀</span><span class="lbl">여성</span></button>
+          </div>
+        </div>
+
+        <div class="ob-field">
+          <label class="ob-field-label">상대방 성별</label>
+          <div class="ob-radio-row">
+            <button class="ob-radio female" data-aigender="female"><span class="icon">♀</span><span class="lbl">여성</span></button>
+            <button class="ob-radio male" data-aigender="male"><span class="icon">♂</span><span class="lbl">남성</span></button>
+            <button class="ob-radio" data-aigender="both"><span class="icon">♀♂</span><span class="lbl">둘 다</span></button>
+          </div>
+        </div>
+
+        <div class="ob-tagline">이것만 알려주면 <b>바로 소개시켜줄게 ㅋㅋ</b></div>
+      </div>
+      <div class="ob-foot"><button class="ob-cta gradient" id="infoNext" disabled>완료</button></div>
+    </div>
+
+    <!-- ── Stage 5: 유서현 짧은 VN 스토리 (선택) ── -->
+    <div class="vn" data-stg="story">
+      <div class="vn-bg" id="vnBgEl"><img id="vnBgImg" src="../assets/seohyun/bg/bg1_office_afternoon.png" alt=""/></div>
+      <div class="vn-top">
+        <button class="vn-back-btn" id="vnBackBtn">‹</button>
+        <button class="vn-skip-btn" id="vnSkipBtn">건너뛰기 →</button>
+      </div>
+      <div class="vn-area" id="vnArea"></div>
+    </div>
+
+    <!-- ── Home: 현수 카톡 (5명 추천) ── -->
+    <div class="stage home-stage" data-stg="home">
+      <div class="home-header-bar">
+        <div class="home-header-title">친구들의 소개</div>
+      </div>
+      <div class="home-chat-header">
+        <div class="home-ch-avatar">현</div>
+        <div class="home-ch-info">
+          <div class="home-ch-name">현수</div>
+          <div class="home-ch-sub"><span class="home-ch-dot"></span>지금 온라인 · 매칭메이커</div>
+        </div>
+      </div>
+      <div class="home-body" id="homeBody"><div class="home-chat" id="homeChat"></div></div>
+      <div class="bottom-nav">
+        <button class="nav-item">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L14 4L24 12V22a1 1 0 01-1 1h-4v-7h-6v7H5a1 1 0 01-1-1z"/></svg>
+          <div class="nav-label">홈</div>
+        </button>
+        <button class="nav-item">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="10.5"/><path d="M17 10.5c-.7-1-1.8-1.5-3-1.5-2.2 0-4 2.2-4 5s1.8 5 4 5c1.2 0 2.3-.5 3-1.5"/></svg>
+          <div class="nav-label">코인</div>
+        </button>
+        <button class="nav-item active">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="21" height="19" rx="2.5"/><path d="M3.5 10.5h21"/><path d="M9 3v4M19 3v4"/><path d="M14 19c-2.2-1.5-3.5-2.8-3.5-4.3 0-1.2.9-2.2 2.1-2.2.7 0 1.3.4 1.4.9.1-.5.7-.9 1.4-.9 1.2 0 2.1 1 2.1 2.2 0 1.5-1.3 2.8-3.5 4.3z" fill="currentColor" stroke="none"/></svg>
+          <div class="nav-label">데이트</div>
+        </button>
+        <button class="nav-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+          <div class="nav-label">달성 기록</div>
+        </button>
+        <button class="nav-item">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="9" r="4.5"/><path d="M5 24v-1.5C5 19.5 8 17 14 17s9 2.5 9 5.5V24"/></svg>
+          <div class="nav-label">마이페이지</div>
+        </button>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-jumper">
+    <span class="lbl">Jump</span>
+    <button data-jump="char" class="active">1.캐릭터</button>
+    <button data-jump="mood">2.분위기</button>
+    <button data-jump="needs">3.필요</button>
+    <button data-jump="info">4.정보</button>
+    <button data-jump="story">5.유서현</button>
+    <button data-jump="home">홈</button>
+  </div>
+</div>
+
+<script>
+  // ─── Asset paths ───
+  const SEOYOON_IMG = '../assets/seoyoon/character_base/CH-A_white_tee_jeans/01.jpg';
+  const SH_BG = '../assets/seohyun/bg';
+  const SH_CHAR = '../assets/seohyun/char';
+  const SH_MSG = '../assets/seohyun/msg';
+  const VID = '../assets/videos';
+
+  // ─── Character data (Stage 1, large cards) ───
+  const CHARACTERS = [
+    { id: 'seohyun', name: '유서현', age: 24, tag: '회사 후배 · 봄날의 신입',  type: 'video', src: SH_CHAR + '/char1.mp4' },
+    { id: 'seoyoon', name: '이서윤', age: 28, tag: '옆집 누나 · 재회',         type: 'image', src: SEOYOON_IMG },
+    { id: 'ayoung',  name: '아영',   age: 24, tag: '경제 과외 · 똑똑한 누나',  type: 'video', src: VID + '/01.mp4' },
+    { id: 'miyu',    name: '미유',   age: 23, tag: '일본인 · 순수한',          type: 'video', src: VID + '/02.mp4' },
+    { id: 'harin',   name: '하린',   age: 26, tag: '영화 좋아함 · 분위기',     type: 'video', src: VID + '/03.mp4' },
+  ];
+
+  // ─── State ───
+  const userInfo = { selectedChar: null, mood: null, needs: [], name: null, dob: null, age: null, gender: null, aiGender: null };
+
+  // ─── Stage navigation ───
+  function goStage(id) {
+    document.querySelectorAll('.stage, .vn').forEach(s => s.classList.remove('active'));
+    const target = document.querySelector(`[data-stg="${id}"]`);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.dev-jumper button').forEach(b => b.classList.toggle('active', b.dataset.jump === id));
+    if (id === 'story') startStory();
+    if (id === 'home') startHome();
+  }
+  document.querySelectorAll('.dev-jumper button').forEach(b => b.addEventListener('click', () => goStage(b.dataset.jump)));
+  document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => goStage(b.dataset.back)));
+
+  // Skip handlers — every stage skip goes to next stage
+  const SKIP_NEXT = { char: 'mood', mood: 'needs', needs: 'info', info: 'story', story: 'home' };
+  document.querySelectorAll('[data-skip]').forEach(b => b.addEventListener('click', () => goStage(SKIP_NEXT[b.dataset.skip])));
+
+  // ─── Stage 1: 캐릭터 카드 ───
+  const deck = document.getElementById('charDeck');
+  const charNext = document.getElementById('charNext');
+  CHARACTERS.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.dataset.id = c.id;
+    const media = c.type === 'video'
+      ? `<video src="${c.src}" autoplay muted loop playsinline preload="metadata"></video>`
+      : `<img src="${c.src}" alt=""/>`;
+    card.innerHTML = `
+      ${media}
+      <div class="char-check">✓</div>
+      <div class="char-overlay">
+        <div class="char-name-row"><div class="char-name">${c.name}</div><div class="char-age">${c.age}</div></div>
+        <div class="char-tag">${c.tag}</div>
+      </div>`;
+    card.addEventListener('click', () => {
+      deck.querySelectorAll('.char-card').forEach(x => x.classList.remove('selected'));
+      card.classList.add('selected');
+      userInfo.selectedChar = c.id;
+      charNext.disabled = false;
+    });
+    deck.appendChild(card);
+  });
+  charNext.addEventListener('click', () => goStage('mood'));
+
+  // ─── Stage 2: 분위기 ───
+  const moodNext = document.getElementById('moodNext');
+  document.querySelectorAll('.mood-card').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.mood-card').forEach(x => x.classList.remove('selected'));
+      c.classList.add('selected');
+      userInfo.mood = c.dataset.mood;
+      moodNext.disabled = false;
+    });
+  });
+  moodNext.addEventListener('click', () => goStage('needs'));
+
+  // ─── Stage 3: 필요한 것 (다중 선택) ───
+  const needCount = document.getElementById('needCount');
+  document.querySelectorAll('.need-chip').forEach(c => {
+    c.addEventListener('click', () => {
+      c.classList.toggle('selected');
+      const id = c.dataset.need;
+      if (c.classList.contains('selected')) {
+        if (!userInfo.needs.includes(id)) userInfo.needs.push(id);
+      } else {
+        userInfo.needs = userInfo.needs.filter(n => n !== id);
+      }
+      needCount.textContent = userInfo.needs.length;
+    });
+  });
+  document.getElementById('needsNext').addEventListener('click', () => goStage('info'));
+
+  // ─── Stage 4: 필수 정보 폼 ───
+  const infoName = document.getElementById('infoName');
+  const infoY = document.getElementById('infoY'), infoM = document.getElementById('infoM'), infoD = document.getElementById('infoD');
+  const infoNext = document.getElementById('infoNext');
+  // Populate selects
+  infoY.innerHTML = '<option value="">출생연도</option>' + Array.from({length: 2010 - 1940 + 1}, (_,i) => { const y = 2010 - i; return `<option value="${y}">${y}년</option>`; }).join('');
+  infoM.innerHTML = '<option value="">월</option>' + Array.from({length: 12}, (_,i) => `<option value="${i+1}">${i+1}월</option>`).join('');
+  infoD.innerHTML = '<option value="">일</option>' + Array.from({length: 31}, (_,i) => `<option value="${i+1}">${i+1}일</option>`).join('');
+
+  function checkInfoValid() {
+    const ok = infoName.value.trim() && infoY.value && infoM.value && infoD.value && userInfo.gender && userInfo.aiGender;
+    infoNext.disabled = !ok;
+  }
+  infoName.addEventListener('input', checkInfoValid);
+  [infoY, infoM, infoD].forEach(s => s.addEventListener('change', checkInfoValid));
+  document.querySelectorAll('.ob-radio[data-mygender]').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.ob-radio[data-mygender]').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      userInfo.gender = b.dataset.mygender;
+      checkInfoValid();
+    });
+  });
+  document.querySelectorAll('.ob-radio[data-aigender]').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.ob-radio[data-aigender]').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      userInfo.aiGender = b.dataset.aigender;
+      checkInfoValid();
+    });
+  });
+  infoNext.addEventListener('click', () => {
+    userInfo.name = infoName.value.trim();
+    const y = parseInt(infoY.value, 10), m = parseInt(infoM.value, 10), d = parseInt(infoD.value, 10);
+    userInfo.dob = `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+    const today = new Date(2026, 3, 22);
+    let age = today.getFullYear() - y;
+    const mDiff = today.getMonth() - (m - 1);
+    if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) age--;
+    userInfo.age = age;
+    goStage('story');
+  });
+
+  // ─── Stage 5: 유서현 짧은 VN 스토리 ───
+  // Asset shorthand
+  const SY_CHAR = (n) => `${SH_CHAR}/char${n}.mp4`;
+  // 짧은 압축 시퀀스 (입력한 이름 사용)
+  function STORY_SCENES() {
+    const NAME = userInfo.name || '선배';
+    return [
+      { speaker: null, text: '오후 1시. 사무실 안. 점심 후 카페인 한 모금도 못 마신 당신은 업무에 파묻혀 있다.', img: SH_BG + '/bg1_office_afternoon.png' },
+      { speaker: null, text: '책상 위 서류 더미. 모니터 속 엑셀 숫자가 흐릿하게 번진다. 한숨이 나온다.', img: SH_BG + '/bg1_office_afternoon.png' },
+      { speaker: '나', text: '하아... 끝이 없네.', isUser: true, img: SH_BG + '/bg1_office_afternoon.png' },
+      { speaker: null, text: '그때 띠링— 회사 메신저 알림이 떴다.', img: SH_BG + '/bg1_office_afternoon.png' },
+      { speaker: '유서현', text: `${NAME} 선배!`, charVid: 1 },
+      { speaker: '유서현', text: '방금 한숨 소리 여기까지 들렸어요🥲', charVid: 1 },
+      { speaker: '유서현', text: '업무 너무 많으시죠...?ㅠㅠ', charVid: 1 },
+      { choices: [
+          { text: '일이 너무 많네...', next: 8 },
+          { text: '아니야, 괜찮아.', next: 8 },
+        ], charVid: 1 },
+      { speaker: '유서현', text: '그렇게 한숨 푹푹 내쉬면 봄기운 다 날아간다니까요?', charVid: 2 },
+      { speaker: '유서현', text: `${NAME} 선배 지금 얼굴, 완전 카페인 부족이라고 쓰여 있어요😂`, charVid: 2 },
+      { speaker: null, text: '서현이 사진 한 장을 보내왔다.', sentPhoto: SY_CHAR(3), charVid: 3 },
+      { speaker: '유서현', text: '저희 회사 근처에 커피 맛집 찾아뒀어요!', charVid: 3 },
+      { speaker: '유서현', text: '내일은 제가 여기서 커피 사올게요 ㅎㅎ☕', charVid: 3 },
+      { choices: [
+          { text: '오 커피 맛있겠는데?', next: 14 },
+          { text: '잠깐 지금 같이 나갈래?', next: 16 },
+        ], charVid: 3 },
+      { speaker: '유서현', text: '그쵸! 여기 원두가 다른 카페랑 확실히 달라요~', charVid: 3 },
+      { speaker: '나', text: '말 나온 김에, 지금 잠깐 나갔다 올까?', isUser: true, charVid: 3 },
+      { speaker: '유서현', text: '지금요?!', charVid: 4 },
+      { speaker: '나', text: '응. 잠깐 벚꽃 구경도 할 겸. 복도에서 기다려.', isUser: true, charVid: 4 },
+      { speaker: '유서현', text: '네, 알겠어요 선배...! ㅎㅎ', charVid: 4 },
+      { speaker: null, text: '복도 모퉁이. 서현이 가벼운 발걸음으로 다가왔다.', img: SH_BG + '/bg2_hallway.jpg' },
+      { speaker: '유서현', text: `${NAME} 선배! 여기예요, 여기!`, charVid: 5 },
+      { speaker: null, text: '회사 후문을 나서자, 눈부신 풍경이 펼쳐졌다. 거리 양옆 벚꽃나무가 만든 분홍색 터널.', img: SH_BG + '/bg3_cherry_day.jpg' },
+      { speaker: '유서현', text: '선배! 이거, 이거! 떨어지는 벚꽃잎 잡으면 소원이 이루어진대요!', charVid: 6 },
+      { speaker: null, text: '그녀의 옆모습. 햇살을 받아 눈부시게 빛났다. 평정심이 무너진다.', img: SH_BG + '/bg3_cherry_day.jpg' },
+      { speaker: '유서현', text: `${NAME} 선배... 오늘은 저랑 퇴근도 같이 해요!`, charVid: 6 },
+      { speaker: null, text: '두 사람 위로 따뜻한 봄 햇살과 벚꽃잎이 축복처럼 쏟아져 내리고 있었다.', img: SH_BG + '/bg4_cherry_sunset.jpg' },
+      { ending: true, title: `${NAME} & 유서현`, sub: '봄이 오는 사무실에서 시작된 비밀 데이트. 다음 이야기는 곧 이어져요.', img: SH_BG + '/bg5_office_sunset.png' },
+    ];
+  }
+
+  let storyIdx = 0;
+  let storyScenes = [];
+
+  function startStory() {
+    storyIdx = 0;
+    storyScenes = STORY_SCENES();
+    renderStoryScene();
+  }
+
+  function renderStoryScene() {
+    const cur = storyScenes[storyIdx]; if (!cur) return;
+    // BG (image vs video character)
+    const bgEl = document.getElementById('vnBgEl');
+    if (cur.charVid) {
+      bgEl.innerHTML = `<video src="${SY_CHAR(cur.charVid)}" autoplay muted loop playsinline preload="metadata"></video>`;
+    } else if (cur.img) {
+      bgEl.innerHTML = `<img src="${cur.img}" alt=""/>`;
+    }
+    const area = document.getElementById('vnArea');
+    area.innerHTML = '';
+
+    if (cur.ending) {
+      area.innerHTML = `
+        <div style="background:rgba(0,0,0,0.78);color:#fff;border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-family:'Nanum Myeongjo',serif;font-size:24px;font-weight:700;margin-bottom:6px;letter-spacing:-0.5px;">${cur.title}</div>
+          <div style="font-family:var(--font-sans);font-size:13px;line-height:20px;opacity:0.85;letter-spacing:-0.25px;margin-bottom:18px;">${cur.sub}</div>
+          <button id="storyDone" style="width:100%;padding:14px;background:var(--gradient-brand);color:#fff;border:0;border-radius:10px;font-family:var(--font-sans);font-weight:700;font-size:15px;letter-spacing:-0.25px;cursor:pointer;box-shadow:0 6px 18px rgba(255,94,25,0.35);">이제 다른 사람도 만나보기 →</button>
+        </div>`;
+      document.getElementById('storyDone').addEventListener('click', () => goStage('home'));
+      return;
+    }
+
+    if (cur.choices) {
+      const wrap = document.createElement('div');
+      wrap.className = 'vn-choices';
+      cur.choices.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'vn-choice';
+        btn.textContent = c.text;
+        btn.addEventListener('click', () => {
+          storyIdx = c.next;
+          renderStoryScene();
+        });
+        wrap.appendChild(btn);
+      });
+      area.appendChild(wrap);
+      return;
+    }
+
+    if (cur.sentPhoto) {
+      const photo = document.createElement('div');
+      photo.className = 'vn-sent-photo';
+      photo.innerHTML = `<video src="${cur.sentPhoto}" autoplay muted loop playsinline preload="metadata"></video>`;
+      area.appendChild(photo);
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'vn-dialogue';
+    wrap.onclick = () => { storyIdx++; renderStoryScene(); };
+    if (cur.isUser) {
+      wrap.innerHTML = `<div class="vn-speaker user">${cur.speaker || '나'}</div><div class="vn-text">${cur.text}</div>`;
+    } else if (cur.speaker) {
+      wrap.innerHTML = `<div class="vn-speaker npc">${cur.speaker}</div><div class="vn-text">${cur.text}</div>`;
+    } else {
+      wrap.innerHTML = `<div class="vn-text narration">${cur.text}</div>`;
+    }
+    area.appendChild(wrap);
+
+    const hint = document.createElement('div');
+    hint.className = 'vn-tap';
+    hint.textContent = '탭하여 진행 ›';
+    area.appendChild(hint);
+  }
+
+  document.getElementById('vnBackBtn').addEventListener('click', () => goStage('info'));
+  document.getElementById('vnSkipBtn').addEventListener('click', () => goStage('home'));
+
+  // ─── Home: 현수 카톡 5명 추천 ───
+  const homeChat = document.getElementById('homeChat');
+  const homeBody = document.getElementById('homeBody');
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const scrollHome = () => homeBody.scrollTo({ top: homeBody.scrollHeight, behavior: 'smooth' });
+
+  function bRecv(text) { const b = document.createElement('div'); b.className = 'bubble-recv'; b.textContent = text; homeChat.appendChild(b); scrollHome(); }
+  function bSent(text) { const b = document.createElement('div'); b.className = 'bubble-sent'; b.textContent = text; homeChat.appendChild(b); scrollHome(); }
+
+  let typingEl = null;
+  async function typing(ms = 800) {
+    typingEl = document.createElement('div');
+    typingEl.className = 'typing-bubble';
+    typingEl.innerHTML = '<span></span><span></span><span></span>';
+    homeChat.appendChild(typingEl); scrollHome();
+    await delay(ms);
+    typingEl.remove(); typingEl = null;
+  }
+
+  function recCard(c) {
+    const card = document.createElement('div');
+    card.className = 'home-rec-card';
+    const media = c.type === 'video'
+      ? `<video src="${c.src}" autoplay muted loop playsinline preload="metadata"></video>`
+      : `<img class="thumb" src="${c.src}" alt=""/>`;
+    card.innerHTML = `
+      ${media}
+      <div class="home-rec-info">
+        <div class="home-rec-name-row"><div class="home-rec-name">${c.name}</div><div class="home-rec-age">${c.age}</div></div>
+        <div class="home-rec-tag">${c.tag}</div>
+      </div>`;
+    homeChat.appendChild(card); scrollHome();
+    return card;
+  }
+
+  function appendChoices(onAccept, onReject) {
+    const w = document.createElement('div');
+    w.className = 'home-choices';
+    w.innerHTML = `<button class="btn-accept">괜찮은데?</button><button class="btn-reject">난 별로</button>`;
+    w.querySelector('.btn-accept').addEventListener('click', () => { w.remove(); onAccept(); });
+    w.querySelector('.btn-reject').addEventListener('click', () => { w.remove(); onReject(); });
+    homeChat.appendChild(w); scrollHome();
+  }
+
+  function appendStartButton(name) {
+    const btn = document.createElement('button');
+    btn.className = 'home-start-btn';
+    btn.innerHTML = `<span class="lbl-main">${name}한테 바로 가기</span><span class="lbl-arrow">→</span>`;
+    btn.addEventListener('click', async () => {
+      btn.style.opacity = '0.7';
+      btn.querySelector('.lbl-main').textContent = '연결 중...';
+      await delay(1100);
+      btn.remove();
+      const note = document.createElement('div');
+      note.className = 'system-note';
+      note.textContent = `${name}과의 첫 대화가 시작됐어요`;
+      homeChat.appendChild(note); scrollHome();
+      await delay(800);
+      advanceHome();
+    });
+    homeChat.appendChild(btn); scrollHome();
+  }
+
+  // 추천 순서: 사용자 선택한 캐릭터를 1순위로 + 나머지 4명
+  function buildRecQueue() {
+    const sel = userInfo.selectedChar;
+    const ordered = [];
+    if (sel) ordered.push(CHARACTERS.find(c => c.id === sel));
+    CHARACTERS.forEach(c => { if (!sel || c.id !== sel) ordered.push(c); });
+    return ordered;
+  }
+
+  let recQueue = [];
+  let recIdx = 0;
+
+  async function startHome() {
+    if (homeChat.dataset.started === '1') return;
+    homeChat.dataset.started = '1';
+    homeChat.innerHTML = '';
+    recIdx = 0;
+    recQueue = buildRecQueue();
+
+    const NAME = userInfo.name || '너';
+    await delay(600);
+    await typing(900);
+    bRecv(`야 ${NAME} 왔냐 ㅋㅋ`);
+    await delay(400);
+    await typing(800);
+    bRecv('너 정보 보고 5명 골라봤음');
+    await delay(400);
+    await typing(700);
+    bRecv('한 명씩 보여줄게');
+    await delay(500);
+    runRec(recIdx);
+  }
+
+  async function runRec(i) {
+    const c = recQueue[i]; if (!c) return endHome();
+    const NAME = userInfo.name || '너';
+    const intros = [
+      // intros[0] used for user-picked char (special hook)
+      [`아 ${NAME} 첫번째는 너가 골랐던 ${c.name} ㅋㅋ`, `${c.name}, ${c.age}살이고 ${c.tag.split('·')[0].trim()}임`, '진짜 너랑 잘 맞을 듯'],
+      [`다음은 ${c.name}`, `${c.age}살, ${c.tag}`, '얘도 진짜 괜찮음 ㄹㅇ'],
+      [`이번엔 ${c.name} ㅋㅋ`, `${c.tag}`, '한번 봐봐'],
+      [`또 한 명 ${c.name}`, `${c.age}살임`, '얘도 추천'],
+      [`마지막 ${c.name}`, `${c.tag}`, '얘로 마무리할게 ㅋㅋ'],
+    ];
+    const lines = i === 0 ? intros[0] : intros[Math.min(i, intros.length - 1)];
+
+    for (const line of lines) {
+      await typing(700 + Math.random() * 300);
+      bRecv(line);
+      await delay(400);
+    }
+    await typing(900);
+    recCard(c);
+    await delay(300);
+    appendChoices(
+      () => onAccept(c),
+      () => onReject(c),
+    );
+  }
+
+  async function onAccept(c) {
+    bSent('괜찮은데? 얘기해봐');
+    await delay(900);
+    await typing(800);
+    bRecv('오케 그럼 내가 연결해줌 ㅋㅋ');
+    await delay(400);
+    appendStartButton(c.name);
+  }
+
+  async function onReject(c) {
+    bSent('음... 난 별로');
+    await delay(700);
+    await typing(700);
+    bRecv('ㅋㅋ 알겠어 다음');
+    await delay(500);
+    advanceHome();
+  }
+
+  async function advanceHome() {
+    recIdx++;
+    if (recIdx >= recQueue.length) return endHome();
+    await delay(500);
+    runRec(recIdx);
+  }
+
+  async function endHome() {
+    await delay(500);
+    const end = document.createElement('div');
+    end.className = 'system-note';
+    end.style.padding = '14px 18px';
+    end.style.lineHeight = '18px';
+    end.innerHTML = '오늘의 소개는 여기까지<br>내일 새로운 친구들 또 데려올게 ㅋㅋ';
+    homeChat.appendChild(end); scrollHome();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rizz · 카톡-네이티브 풀 플로우</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script>if (location.hash === '#embed') document.documentElement.setAttribute('data-embed','1');</script>
+<style>
+  html[data-embed="1"] body { background: transparent !important; margin: 0 !important; padding: 0 !important; }
+  html[data-embed="1"] .page { padding: 0 !important; min-height: 0 !important; gap: 0 !important; }
+  html[data-embed="1"] .page > *:not(.phone) { display: none !important; }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #0E0E10; font-family: var(--font-sans); letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
+
+  .page { min-height: 100vh; padding: 56px 48px 120px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  .page-head { max-width: 560px; text-align: center; color: #EDEEF1; }
+  .eyebrow { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-primary-500); margin-bottom: 12px; }
+  .page-h1 { font-weight: 800; font-size: 32px; letter-spacing: -0.6px; line-height: 1.15; margin: 0 0 10px; color: #fff; }
+  .page-sub { font-size: 14px; color: rgba(237,238,241,0.6); letter-spacing: -0.25px; line-height: 1.55; }
+
+  /* Phone */
+  .phone { width: 393px; height: 852px; border-radius: 47px; border: 10px solid #1A1A1A; box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.1); overflow: hidden; background: #fff; flex-shrink: 0; position: relative; display: flex; flex-direction: column; }
+  .island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 80; }
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px 0 32px; font-family: -apple-system, system-ui; color: var(--color-gray-950); flex-shrink: 0; position: relative; z-index: 70; background: #fff; }
+  .status-bar .time { font-size: 15.72px; font-weight: 600; letter-spacing: -0.4px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+
+  /* ─ Welcome (overlay) ─ */
+  .welcome { position: absolute; inset: 0; z-index: 50; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 64px 28px 32px; transition: opacity .35s; }
+  .welcome.hidden { opacity: 0; pointer-events: none; }
+  .welcome-top { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .welcome-logo { width: 132px; height: 132px; border-radius: 50%; background: var(--gradient-brand); display: flex; align-items: center; justify-content: center; box-shadow: 0 16px 40px rgba(255,94,25,0.35); margin-bottom: 28px; position: relative; overflow: hidden; }
+  .welcome-logo::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.3), transparent 55%); }
+  .welcome-logo svg { width: 74px; height: auto; z-index: 1; }
+  .welcome-title { font-family: var(--font-sans); font-weight: 800; font-size: 26px; line-height: 1.3; letter-spacing: -0.5px; color: var(--color-gray-950); margin-bottom: 10px; }
+  .welcome-sub { font-family: var(--font-sans); font-size: 14px; line-height: 22px; letter-spacing: -0.25px; color: var(--color-gray-700); max-width: 280px; }
+  .welcome-cta { width: 100%; height: 55px; border: 0; border-radius: 1000px; background: var(--gradient-brand); color: #fff; font-family: var(--font-sans); font-weight: 700; font-size: 17px; letter-spacing: -0.25px; cursor: pointer; box-shadow: 0 6px 18px rgba(255,94,25,0.32); transition: transform .1s; }
+  .welcome-cta:active { transform: scale(0.98); }
+
+  /* ─ Top bar (현수 chat header + 건너뛰기) ─ */
+  .top-bar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff; border-bottom: 1px solid var(--color-gray-100); flex-shrink: 0; }
+  .ch-avatar { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); background: linear-gradient(135deg, hsl(28, 55%, 70%), hsl(28, 45%, 50%)); overflow: hidden; }
+  .ch-avatar img, .ch-avatar video { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .ch-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .ch-name { font-family: var(--font-sans); font-weight: 700; font-size: 15px; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .ch-sub { font-family: var(--font-sans); font-size: 11px; color: var(--color-gray-500); letter-spacing: -0.3px; display: flex; align-items: center; gap: 4px; }
+  .ch-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent-success); }
+  .skip-btn { background: transparent; border: 0; padding: 8px 10px; font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-500); cursor: pointer; letter-spacing: -0.25px; }
+
+  /* ─ Chat ─ */
+  .body { flex: 1; overflow-y: auto; background: var(--color-gray-50); }
+  .body::-webkit-scrollbar { display: none; }
+  .chat { padding: 14px 14px 20px; display: flex; flex-direction: column; gap: 4px; }
+
+  .bubble-recv { align-self: flex-start; max-width: 260px; padding: 9px 14px; background: #fff; color: var(--color-gray-950); border-radius: 4px 18px 18px 18px; font-family: var(--font-latin); font-size: 15px; line-height: 20px; letter-spacing: -0.003em; word-break: break-word; border: 1px solid var(--color-gray-100); margin-bottom: 2px; }
+  .bubble-sent { align-self: flex-end; max-width: 260px; padding: 9px 14px; background: var(--color-accent-sent); color: var(--color-gray-950); border-radius: 18px 18px 4px 18px; font-family: var(--font-latin); font-size: 15px; line-height: 20px; letter-spacing: -0.003em; margin-top: 4px; margin-bottom: 6px; }
+
+  .typing { align-self: flex-start; padding: 12px 14px; background: #fff; border-radius: 4px 18px 18px 18px; display: inline-flex; gap: 4px; align-items: center; border: 1px solid var(--color-gray-100); margin-top: 4px; margin-bottom: 4px; }
+  .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--color-gray-500); }
+  .typing span:nth-child(1) { animation: tBounce 1.2s infinite 0s; }
+  .typing span:nth-child(2) { animation: tBounce 1.2s infinite .18s; }
+  .typing span:nth-child(3) { animation: tBounce 1.2s infinite .36s; }
+  @keyframes tBounce { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+  /* ─ 캐릭터 사진 메시지 (한 장씩 크게) ─ */
+  .photo-msg {
+    align-self: flex-start;
+    width: 280px; aspect-ratio: 280 / 380;
+    border-radius: 18px; overflow: hidden; position: relative;
+    cursor: pointer;
+    background: var(--color-gray-200);
+    border: 3px solid transparent;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    transition: all .2s;
+    margin: 6px 0 4px 0;
+    animation: photoIn .35s cubic-bezier(0.2,0,0,1) both;
+  }
+  @keyframes photoIn { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .photo-msg:active { transform: scale(0.98); }
+  .photo-msg.selected { border-color: var(--color-primary-500); box-shadow: 0 8px 24px rgba(255,94,25,0.32); }
+  .photo-msg.dimmed { opacity: 0.45; filter: grayscale(0.4); }
+  .photo-msg video, .photo-msg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .photo-msg .pm-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.85));
+    padding: 18px 16px;
+    display: flex; flex-direction: column; justify-content: flex-end; color: #fff;
+  }
+  .photo-msg .pm-name-row { display: flex; align-items: baseline; gap: 6px; }
+  .photo-msg .pm-name { font-family: var(--font-sans); font-weight: 800; font-size: 20px; letter-spacing: -0.4px; }
+  .photo-msg .pm-age { font-family: var(--font-sans); font-size: 13px; opacity: 0.85; }
+  .photo-msg .pm-tag { font-family: var(--font-sans); font-size: 12px; opacity: 0.85; margin-top: 4px; letter-spacing: -0.25px; }
+  .photo-msg .pm-check {
+    position: absolute; top: 12px; right: 12px; z-index: 3;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; font-weight: 700;
+    transition: all .15s;
+  }
+  .photo-msg.selected .pm-check { background: var(--color-primary-500); border-color: #fff; transform: scale(1.1); }
+  .photo-msg .pm-pick-hint {
+    position: absolute; top: 12px; left: 12px; z-index: 3;
+    padding: 4px 10px; border-radius: 100px;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(8px);
+    color: #fff; font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+    letter-spacing: -0.25px;
+  }
+
+  /* ─ 인라인 분위기 카드 (2장) ─ */
+  .mood-row {
+    align-self: stretch; display: flex; gap: 10px; margin: 6px 0 8px;
+  }
+  .mood-card {
+    flex: 1; aspect-ratio: 1.2 / 1;
+    border-radius: 14px; overflow: hidden; position: relative;
+    cursor: pointer; border: 3px solid transparent; transition: all .15s;
+  }
+  .mood-card.selected { border-color: var(--color-primary-500); }
+  .mood-card .bg { position: absolute; inset: 0; z-index: 1; }
+  .mood-card.romance .bg { background: linear-gradient(135deg, #FFC1D6 0%, #FF7AAB 50%, #E15B8A 100%); }
+  .mood-card.spicy .bg { background: linear-gradient(135deg, #FF8845 0%, #E54400 50%, #B23500 100%); }
+  .mood-card .ov { position: absolute; inset: 0; z-index: 2; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; }
+  .mood-card .em { font-size: 28px; line-height: 1; }
+  .mood-card .ti { font-family: var(--font-sans); font-weight: 800; font-size: 17px; letter-spacing: -0.3px; }
+  .mood-card .ds { font-family: var(--font-sans); font-size: 11px; opacity: 0.92; line-height: 15px; margin-top: 2px; letter-spacing: -0.25px; }
+
+  /* ─ 인라인 칩 (필요한 것 다중) ─ */
+  .chips-bubble {
+    align-self: stretch;
+    background: #fff; border: 1px solid var(--color-gray-100);
+    border-radius: 14px;
+    padding: 12px;
+    margin: 4px 0 8px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .chips-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 8px 12px; border-radius: 100px;
+    background: #fff; border: 1px solid var(--color-gray-200);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    color: var(--color-gray-950); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.2;
+    transition: all .14s;
+  }
+  .chip.selected {
+    background: rgba(255,94,25,0.1); border-color: var(--color-primary-500);
+    color: var(--color-primary-700); font-weight: 700;
+  }
+  .chip-confirm {
+    align-self: stretch; height: 38px; border: 0; border-radius: 100px;
+    background: var(--color-primary-500); color: #fff;
+    font-family: var(--font-sans); font-weight: 700; font-size: 13px;
+    letter-spacing: -0.25px; cursor: pointer;
+  }
+  .chip-confirm:disabled { background: var(--color-gray-300); color: #F9F6F5; cursor: not-allowed; }
+
+  /* ─ 단일 칩 선택 (성별, 분위기 등에 쓸 수도) ─ */
+  .single-chips {
+    align-self: stretch; display: flex; flex-wrap: wrap; gap: 6px;
+    margin: 4px 0 8px;
+  }
+
+  /* ─ 인라인 입력 폼 버블 ─ */
+  .input-bubble {
+    align-self: flex-end; max-width: 280px; min-width: 220px;
+    background: #fff; border: 1.5px solid var(--color-primary-300);
+    border-radius: 18px 18px 4px 18px;
+    padding: 12px 14px; margin: 6px 0 8px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .input-bubble .lbl { font-family: var(--font-sans); font-weight: 600; font-size: 11px; color: var(--color-gray-700); letter-spacing: -0.25px; }
+  .input-bubble input[type="text"] {
+    width: 100%; height: 40px; padding: 0 14px;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--color-gray-950);
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-100); border-radius: 10px; outline: none;
+  }
+  .input-bubble input[type="text"]:focus { border-color: var(--color-primary-500); background: #fff; }
+  .input-bubble select {
+    flex: 1; height: 40px; padding: 0 12px;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--color-gray-950); background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-100); border-radius: 10px;
+    appearance: none; -webkit-appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c8c8c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
+  }
+  .input-bubble .row { display: flex; gap: 6px; }
+  .input-bubble .submit {
+    align-self: stretch; height: 40px; border: 0; border-radius: 100px;
+    background: var(--color-primary-500); color: #fff;
+    font-family: var(--font-sans); font-weight: 700; font-size: 13px; letter-spacing: -0.25px;
+    cursor: pointer;
+  }
+  .input-bubble .submit:disabled { background: var(--color-gray-300); cursor: not-allowed; }
+  .input-bubble .err { font-family: var(--font-sans); font-size: 11px; color: #c46b7c; }
+
+  /* ─ 시작 버튼 (스토리/캐릭터 시작) ─ */
+  .start-btn {
+    align-self: stretch;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; background: var(--gradient-brand); color: #fff;
+    border: 0; border-radius: 12px; cursor: pointer;
+    margin: 8px 0; box-shadow: 0 6px 18px rgba(255,94,25,0.32);
+    font-family: var(--font-sans);
+  }
+  .start-btn:active { transform: scale(0.98); }
+  .start-btn .lm { font-weight: 700; font-size: 15px; letter-spacing: -0.25px; }
+  .start-btn .ls { font-weight: 400; font-size: 12px; letter-spacing: -0.25px; opacity: 0.9; }
+  .start-btn .ar { font-size: 20px; opacity: 0.9; margin-left: auto; }
+  .start-btn .col { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+
+  /* ─ 추천 카드 (홈, 5명 추천 시) ─ */
+  .rec-card {
+    align-self: flex-start; width: 220px;
+    border-radius: 18px; overflow: hidden; position: relative;
+    aspect-ratio: 220 / 320;
+    box-shadow: 0 4px 14px rgba(26,26,26,0.12);
+    background: #1A1A1E; margin-top: 8px; margin-bottom: 6px;
+  }
+  .rec-card video, .rec-card img.thumb {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top;
+  }
+  .rec-info {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+    padding: 28px 14px 12px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.82)); color: #fff;
+  }
+  .rec-info .nr { display: flex; align-items: baseline; gap: 6px; }
+  .rec-info .nm { font-family: var(--font-sans); font-weight: 800; font-size: 18px; letter-spacing: -0.4px; }
+  .rec-info .ag { font-family: var(--font-sans); font-size: 13px; opacity: 0.85; }
+  .rec-info .tg { font-family: var(--font-sans); font-size: 11px; opacity: 0.78; letter-spacing: -0.25px; margin-top: 2px; }
+
+  .ar-choices {
+    align-self: stretch; display: flex; gap: 8px; margin: 6px 0 10px;
+  }
+  .ar-choices .accept {
+    flex: 1; padding: 12px 14px; background: var(--gradient-brand); border: none;
+    border-radius: 12px; cursor: pointer;
+    font-family: var(--font-sans); font-weight: 700; font-size: 14px; color: #fff;
+    letter-spacing: -0.25px; box-shadow: 0 4px 14px rgba(255,94,25,0.32);
+  }
+  .ar-choices .accept:active { transform: scale(0.98); }
+  .ar-choices .reject {
+    flex: 1; padding: 12px 14px; background: #fff;
+    border: 1px solid var(--color-gray-200); border-radius: 12px; cursor: pointer;
+    font-family: var(--font-sans); font-weight: 600; font-size: 14px;
+    color: var(--color-gray-700); letter-spacing: -0.25px;
+  }
+  .ar-choices .reject:active { transform: scale(0.98); }
+
+  .system-note {
+    align-self: center; padding: 7px 14px;
+    background: var(--color-gray-100); border-radius: 1000px;
+    font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+    color: var(--color-gray-700); letter-spacing: -0.25px;
+    margin: 10px 0 6px;
+  }
+
+  /* ─ Bottom nav (Figma 2477:12940) ─ */
+  .bottom-nav {
+    background: #fff; border-top: 1px solid #ebebeb;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 29px 28px; flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .nav-item { border: 0; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 0; min-width: 30px; }
+  .nav-item svg { stroke: #8c8c8c; color: #8c8c8c; }
+  .nav-item .nav-label { font-family: var(--font-sans); font-size: 13px; line-height: 20px; letter-spacing: -0.0325px; font-weight: 400; color: #8c8c8c; }
+  .nav-item.active svg { stroke: var(--color-primary-500); color: var(--color-primary-500); }
+  .nav-item.active .nav-label { color: var(--color-primary-500); font-weight: 600; }
+  .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 139px; height: 5px; border-radius: 100px; background: rgba(0,0,0,0.3); }
+
+  /* ─ VN overlay (유서현 짧은 스토리) ─ */
+  .vn { position: absolute; inset: 0; z-index: 60; background: #000; display: none; flex-direction: column; }
+  .vn.active { display: flex; }
+  .vn-bg { position: absolute; inset: 0; z-index: 1; cursor: pointer; }
+  .vn-bg img, .vn-bg video { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .vn-top { position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; padding: 56px 16px 14px; }
+  .vn-back-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .vn-skip-btn { padding: 7px 14px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.35); background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); color: #fff; font-family: var(--font-sans); font-size: 12px; font-weight: 600; cursor: pointer; letter-spacing: -0.25px; }
+  .vn-area { position: relative; z-index: 10; margin-top: auto; padding: 0 16px 24px; display: flex; flex-direction: column; }
+  .vn-dialogue { cursor: pointer; }
+  .vn-speaker { display: inline-block; padding: 5px 14px; border-radius: 20px; font-family: var(--font-sans); font-size: 13px; font-weight: 700; letter-spacing: -0.25px; margin-bottom: -14px; position: relative; z-index: 1; }
+  .vn-speaker.npc { background: var(--color-primary-500); color: #fff; }
+  .vn-speaker.user { background: #1a1a1a; color: #fff; align-self: flex-end; margin-left: auto; display: block; width: fit-content; }
+  .vn-text { border-radius: 14px; padding: 18px 20px; font-family: var(--font-sans); font-size: 15px; line-height: 1.6; letter-spacing: -0.25px; min-height: 60px; background: rgba(255,255,255,0.88); backdrop-filter: blur(6px); color: var(--color-gray-950); animation: vnFade .3s ease; }
+  .vn-text.narration { background: rgba(0,0,0,0.78); color: #fff; font-weight: 500; }
+  @keyframes vnFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .vn-tap { text-align: right; padding: 6px 4px 0; font-family: var(--font-sans); font-size: 11px; color: rgba(255,255,255,0.7); animation: blink 1.4s infinite; }
+  @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .vn-choices { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+  .vn-choice { padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: none; cursor: pointer; text-align: left; font-family: var(--font-sans); font-size: 14px; font-weight: 500; color: var(--color-gray-950); letter-spacing: -0.25px; animation: vnFade .35s both; }
+  .vn-choice:active { transform: scale(0.98); }
+  .vn-sent-photo { width: 200px; align-self: flex-start; border-radius: 18px 18px 18px 6px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.25); margin-bottom: 8px; }
+  .vn-sent-photo video, .vn-sent-photo img { width: 100%; display: block; aspect-ratio: 3/4; object-fit: cover; }
+
+  /* ─ 추천 카드 잠금 (3번째부터 블러) ─ */
+  .rec-card.locked video, .rec-card.locked img.thumb {
+    filter: blur(18px) brightness(0.65) saturate(1.2);
+    transform: scale(1.12);
+  }
+  .rec-card .lock-ov {
+    position: absolute; inset: 0; z-index: 4;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; color: #fff; cursor: pointer;
+    background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.55));
+  }
+  .rec-card.locked .lock-ov { display: flex; }
+  .rec-card:not(.locked) .lock-ov { display: none; }
+  .rec-card .lock-circle {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: rgba(255,255,255,0.18); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rec-card .lock-label {
+    font-family: var(--font-sans); font-weight: 700; font-size: 13px; letter-spacing: -0.25px;
+  }
+  .rec-card .lock-tap {
+    padding: 6px 14px; border-radius: 100px;
+    background: rgba(255,255,255,0.22); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+    font-family: var(--font-sans); font-weight: 600; font-size: 11px; letter-spacing: -0.25px;
+  }
+
+  /* ─ Lightbox (썸네일 클릭 시 풀스크린) ─ */
+  .lightbox {
+    position: absolute; inset: 0; z-index: 90;
+    background: rgba(0,0,0,0.92); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center;
+    padding: 40px 16px; cursor: pointer;
+    animation: lbFade .25s ease;
+  }
+  .lightbox.show { display: flex; }
+  @keyframes lbFade { from { opacity: 0; } to { opacity: 1; } }
+  .lightbox-media {
+    max-width: 100%; max-height: 100%;
+    border-radius: 18px; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    cursor: default;
+  }
+  .lightbox-media img, .lightbox-media video {
+    display: block; max-width: 100%; max-height: 80vh; object-fit: contain; background: #000;
+  }
+  .lightbox-info {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    padding: 10px 18px; border-radius: 100px;
+    background: rgba(255,255,255,0.12); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff; font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+    letter-spacing: -0.25px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .lightbox-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* 썸네일 클릭 가능 표시 */
+  .photo-msg, .rec-card { cursor: pointer; }
+
+  /* Dev jumper */
+  .dev-jumper { position: fixed; bottom: 20px; right: 20px; z-index: 200; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px; display: flex; gap: 4px; }
+  .dev-jumper button { padding: 6px 9px; background: rgba(237,238,241,0.06); border: 1px solid transparent; border-radius: 6px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 10px; color: rgba(237,238,241,0.7); cursor: pointer; }
+  .dev-jumper button:hover { color: #fff; }
+  html[data-embed="1"] .dev-jumper { display: none; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <div class="eyebrow">Rizz · 카톡-네이티브 풀 플로우</div>
+    <h1 class="page-h1">전 단계 채팅으로</h1>
+    <p class="page-sub">현수와의 카톡 안에서 캐릭터 선택 → 분위기 → 필요한 것 → 이름·생일·성별·상대 → 유서현 VN(잠깐) → 5명 추천. 우상단 '건너뛰기' 상시.</p>
+  </div>
+
+  <div class="phone">
+    <div class="island"></div>
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <svg width="18" height="10" viewBox="0 0 18 10"><rect x="0" y="6" width="3" height="4" rx="0.5" fill="#1A1A1A"/><rect x="5" y="4" width="3" height="6" rx="0.5" fill="#1A1A1A"/><rect x="10" y="2" width="3" height="8" rx="0.5" fill="#1A1A1A"/><rect x="15" y="0" width="3" height="10" rx="0.5" fill="#1A1A1A"/></svg>
+        <svg width="17" height="11" viewBox="0 0 17 11"><path d="M8.5 2.2C10.8 2.2 12.9 3.1 14.4 4.6L15.5 3.5C13.7 1.7 11.2 0.5 8.5 0.5S3.3 1.7 1.5 3.5L2.6 4.6C4.1 3.1 6.2 2.2 8.5 2.2z" fill="#1A1A1A"/><circle cx="8.5" cy="9.5" r="1.5" fill="#1A1A1A"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#1A1A1A" fill="none"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="#1A1A1A"/><rect x="22.5" y="4" width="1.5" height="4" rx="0.5" fill="#1A1A1A" opacity="0.5"/></svg>
+      </div>
+    </div>
+
+    <!-- Top bar (현수 + 건너뛰기) -->
+    <div class="top-bar">
+      <div class="ch-avatar" id="chAvatar">현</div>
+      <div class="ch-info">
+        <div class="ch-name" id="chName">현수</div>
+        <div class="ch-sub"><span class="ch-dot"></span><span id="chSub">지금 온라인 · 매칭메이커</span></div>
+      </div>
+      <button class="skip-btn" id="skipBtn">건너뛰기</button>
+    </div>
+
+    <!-- Chat body -->
+    <div class="body" id="body"><div class="chat" id="chat"></div></div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <button class="nav-item"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L14 4L24 12V22a1 1 0 01-1 1h-4v-7h-6v7H5a1 1 0 01-1-1z"/></svg><div class="nav-label">홈</div></button>
+      <button class="nav-item"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="10.5"/><path d="M17 10.5c-.7-1-1.8-1.5-3-1.5-2.2 0-4 2.2-4 5s1.8 5 4 5c1.2 0 2.3-.5 3-1.5"/></svg><div class="nav-label">코인</div></button>
+      <button class="nav-item active"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="21" height="19" rx="2.5"/><path d="M3.5 10.5h21"/><path d="M9 3v4M19 3v4"/><path d="M14 19c-2.2-1.5-3.5-2.8-3.5-4.3 0-1.2.9-2.2 2.1-2.2.7 0 1.3.4 1.4.9.1-.5.7-.9 1.4-.9 1.2 0 2.1 1 2.1 2.2 0 1.5-1.3 2.8-3.5 4.3z" fill="currentColor" stroke="none"/></svg><div class="nav-label">데이트</div></button>
+      <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg><div class="nav-label">달성 기록</div></button>
+      <button class="nav-item"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="9" r="4.5"/><path d="M5 24v-1.5C5 19.5 8 17 14 17s9 2.5 9 5.5V24"/></svg><div class="nav-label">마이페이지</div></button>
+      <div class="home-indicator"></div>
+    </div>
+
+    <!-- Welcome overlay -->
+    <div class="welcome" id="welcome">
+      <div class="welcome-top">
+        <div class="welcome-logo">
+          <svg viewBox="0 0 679.246 265.234" fill="#fff">
+            <path d="M 0 265.234 L 0 17.773 L 105.273 17.773 C 160.645 17.773 196.875 49.219 196.875 101.514 C 196.875 135.693 181.152 159.961 154.492 172.607 L 205.078 265.234 L 134.326 265.234 L 90.576 182.861 L 64.941 182.861 L 64.941 265.234 L 0 265.234 Z M 64.941 131.934 L 90.234 131.934 C 114.844 131.934 128.857 123.047 128.857 101.514 C 128.857 79.639 114.844 69.727 90.234 69.727 L 64.941 69.727 L 64.941 131.934 Z"/>
+            <path d="M 223.453 265.234 L 223.453 79.639 L 288.053 79.639 L 288.053 265.234 L 223.453 265.234 Z M 255.582 59.473 C 237.809 59.473 223.453 46.143 223.453 29.736 C 223.453 13.33 237.809 0 255.582 0 C 273.355 0 287.711 13.33 287.711 29.736 C 287.711 46.143 273.355 59.473 255.582 59.473 Z"/>
+            <path d="M 320.441 265.234 L 320.441 229.346 L 403.156 129.883 L 403.156 128.857 L 323.518 128.857 L 323.518 79.639 L 479.377 79.639 L 479.377 119.287 L 403.84 214.648 L 403.84 215.674 L 482.453 215.674 L 482.453 265.234 L 320.441 265.234 Z"/>
+            <path d="M 517.234 265.234 L 517.234 229.346 L 599.949 129.883 L 599.949 128.857 L 520.311 128.857 L 520.311 79.639 L 676.17 79.639 L 676.17 119.287 L 600.633 214.648 L 600.633 215.674 L 679.246 215.674 L 679.246 265.234 L 517.234 265.234 Z"/>
+          </svg>
+        </div>
+        <div class="welcome-title">친구가 딱인 사람을<br>소개해줘요</div>
+        <div class="welcome-sub">현수가 너한테 맞는 애들만 골라서<br>카톡처럼 편하게 소개해줘요.</div>
+      </div>
+      <button class="welcome-cta" id="welcomeCta">시작하기</button>
+    </div>
+
+    <!-- Lightbox (썸네일 풀스크린) -->
+    <div class="lightbox" id="lightbox">
+      <button class="lightbox-close" id="lightboxClose">✕</button>
+      <div class="lightbox-media" id="lightboxMedia"></div>
+      <div class="lightbox-info" id="lightboxInfo"></div>
+    </div>
+
+    <!-- VN overlay (유서현 짧은 스토리) -->
+    <div class="vn" id="vn">
+      <div class="vn-bg" id="vnBg"><img id="vnBgImg" src="" alt=""/></div>
+      <div class="vn-top">
+        <button class="vn-back-btn" id="vnBackBtn">‹</button>
+        <button class="vn-skip-btn" id="vnSkipBtn">건너뛰기 →</button>
+      </div>
+      <div class="vn-area" id="vnArea"></div>
+    </div>
+  </div>
+
+  <div class="dev-jumper">
+    <button id="devReset">↻ 처음부터</button>
+    <button id="devSkipAll">→ 추천으로</button>
+  </div>
+</div>
+
+<script>
+  // ─── Asset paths ───
+  const SEOYOON_IMG = '../assets/seoyoon/character_base/CH-A_white_tee_jeans/01.jpg';
+  const SH_BG = '../assets/seohyun/bg';
+  const SH_CHAR = '../assets/seohyun/char';
+  const VID = '../assets/videos';
+
+  // ─── Characters (5명) ───
+  const CHARACTERS = [
+    { id: 'seohyun', name: '유서현', age: 24, tag: '회사 후배 · 봄날',  type: 'video', src: SH_CHAR + '/char1.mp4' },
+    { id: 'seoyoon', name: '이서윤', age: 28, tag: '옆집 누나 · 재회',  type: 'image', src: SEOYOON_IMG },
+    { id: 'ayoung',  name: '아영',   age: 24, tag: '경제 과외 · 똑똑',  type: 'video', src: VID + '/01.mp4' },
+    { id: 'miyu',    name: '미유',   age: 23, tag: '일본인 · 순수한',   type: 'video', src: VID + '/02.mp4' },
+    { id: 'harin',   name: '하린',   age: 26, tag: '영화 · 분위기',     type: 'video', src: VID + '/03.mp4' },
+  ];
+
+  const NEED_LABELS = {
+    warmth:'따뜻한 위로', rest:'안식처', thrill:'설레는 자극', escape:'현실 도피',
+    love:'진짜 사랑', fun:'같이 웃기', listen:'들어줄 사람', distract:'잠깐 잊을거리'
+  };
+  const NEEDS = [
+    { id: 'warmth', emoji: '🌿' },{ id: 'rest', emoji: '🏠' },
+    { id: 'thrill', emoji: '🔥' },{ id: 'escape', emoji: '🌙' },
+    { id: 'love', emoji: '💕' },{ id: 'fun', emoji: '✨' },
+    { id: 'listen', emoji: '👂' },{ id: 'distract', emoji: '🎮' },
+  ];
+
+  // ─── State ───
+  const u = { selectedChar: null, mood: null, needs: [], name: null, dob: null, age: null, gender: null, aiGender: null };
+  let currentTurn = null;  // 'char' | 'mood' | 'needs' | 'name' | 'dob' | 'gender' | 'aiGender' | 'story-cta' | 'home-rec'
+
+  // ─── DOM ───
+  const $ = id => document.getElementById(id);
+  const chat = $('chat'), body = $('body');
+  const skipBtn = $('skipBtn'), welcome = $('welcome'), welcomeCta = $('welcomeCta');
+  const vn = $('vn'), vnBg = $('vnBg'), vnBgImg = $('vnBgImg'), vnArea = $('vnArea');
+
+  // ─── Helpers ───
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const scroll = () => requestAnimationFrame(() => body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }));
+
+  function recv(text) { const b = document.createElement('div'); b.className = 'bubble-recv'; b.textContent = text; chat.appendChild(b); scroll(); return b; }
+  function sent(text) { const b = document.createElement('div'); b.className = 'bubble-sent'; b.textContent = text; chat.appendChild(b); scroll(); return b; }
+  function note(text) { const n = document.createElement('div'); n.className = 'system-note'; n.innerHTML = text; chat.appendChild(n); scroll(); return n; }
+  let typingEl = null;
+  async function typing(ms = 800) {
+    typingEl = document.createElement('div');
+    typingEl.className = 'typing';
+    typingEl.innerHTML = '<span></span><span></span><span></span>';
+    chat.appendChild(typingEl); scroll();
+    await delay(ms);
+    typingEl.remove(); typingEl = null;
+  }
+  async function say(...lines) {
+    for (const l of lines) {
+      await typing(550 + Math.random() * 250);
+      recv(l);
+      await delay(280);
+    }
+  }
+
+  // ─── Welcome ───
+  welcomeCta.addEventListener('click', () => {
+    welcome.classList.add('hidden');
+    setTimeout(startOnboarding, 350);
+  });
+
+  // ─── Top bar character (현수 ↔ 유서현 모핑) ───
+  function setHeader(who) {
+    const av = $('chAvatar'), nm = $('chName'), sub = $('chSub');
+    if (who === 'hyunsu') {
+      av.style.background = 'linear-gradient(135deg, hsl(28, 55%, 70%), hsl(28, 45%, 50%))';
+      av.innerHTML = '현';
+      nm.textContent = '현수';
+      sub.textContent = '지금 온라인 · 매칭메이커';
+    }
+  }
+
+  // ─── 건너뛰기 (현재 턴 스킵) ───
+  skipBtn.addEventListener('click', () => skipCurrentTurn());
+  function skipCurrentTurn() {
+    // 현재 진행 중인 턴 입력 위젯 제거하고 다음 단계로
+    document.querySelectorAll('.deck, .mood-row, .chips-bubble, .input-bubble, .single-chips, .start-btn').forEach(el => el.remove());
+    sent('건너뛰기');
+    delay(400).then(advanceFromSkip);
+  }
+  function advanceFromSkip() {
+    const nextMap = { char:'mood', mood:'needs', needs:'name', name:'dob', dob:'gender', gender:'aiGender', aiGender:'story-cta', 'story-cta':'home-rec' };
+    const next = nextMap[currentTurn];
+    if (!next) return;
+    runTurn(next);
+  }
+
+  // ─── 온보딩 시작 ───
+  async function startOnboarding() {
+    chat.innerHTML = '';
+    setHeader('hyunsu');
+    await delay(500);
+    await say('야 왔냐 ㅋㅋ', '너한테 딱인 애 골라줄게');
+    await delay(300);
+    runTurn('char');
+  }
+
+  // ─── 턴 디스패처 ───
+  async function runTurn(name) {
+    currentTurn = name;
+    if (name === 'char') return askChar();
+    if (name === 'mood') return askMood();
+    if (name === 'needs') return askNeeds();
+    if (name === 'name') return askName();
+    if (name === 'dob') return askDob();
+    if (name === 'gender') return askGender();
+    if (name === 'aiGender') return askAiGender();
+    if (name === 'story-cta') return askStoryCta();
+    if (name === 'home-rec') return startRecommendations();
+  }
+
+  // ── 1. 캐릭터 (한 장씩 사진 메시지로 순차 전송) ──
+  async function askChar() {
+    await say('일단 사진 한번 봐봐', '한 명씩 보내줄게 ㄱㄱ');
+
+    const photoMsgs = [];
+    let selected = false;
+
+    for (let i = 0; i < CHARACTERS.length; i++) {
+      if (selected) break;
+      const c = CHARACTERS[i];
+      // 타이핑 후 사진 도착
+      await typing(700 + Math.random() * 400);
+      const card = document.createElement('div');
+      card.className = 'photo-msg'; card.dataset.id = c.id;
+      const media = c.type === 'video'
+        ? `<video src="${c.src}" autoplay muted loop playsinline preload="metadata"></video>`
+        : `<img src="${c.src}" alt=""/>`;
+      const hint = i === 0 ? '<div class="pm-pick-hint">📷 1/5</div>' : `<div class="pm-pick-hint">📷 ${i+1}/5</div>`;
+      card.innerHTML = `${media}${hint}<div class="pm-check">✓</div><div class="pm-overlay"><div class="pm-name-row"><div class="pm-name">${c.name}</div><div class="pm-age">${c.age}</div></div><div class="pm-tag">${c.tag}</div></div>`;
+      card.addEventListener('click', () => {
+        if (selected) return;
+        selected = true;
+        // 선택된 카드 강조, 나머지 dim
+        photoMsgs.forEach(p => {
+          if (p === card) p.classList.add('selected');
+          else p.classList.add('dimmed');
+        });
+        u.selectedChar = c.id;
+        setTimeout(() => {
+          sent(`${c.name}`);
+          afterChar(c);
+        }, 500);
+      });
+      chat.appendChild(card);
+      photoMsgs.push(card);
+      scroll();
+      await delay(450);  // 자연스럽게 다음 사진 도착 전 잠깐
+    }
+
+    // 5장 다 보냈는데 아직 안 골랐으면 push message
+    if (!selected) {
+      await delay(400);
+      await say('맘에 드는 애 탭해봐 ㅋㅋ', '제일 끌리는 한 명만');
+    }
+  }
+  async function afterChar(c) {
+    await delay(300);
+    await say(`오 ${c.name} 골랐네 ㅋㅋ`, '얘 진짜 괜찮음 좋은 선택');
+    runTurn('mood');
+  }
+
+  // ── 2. 분위기 (인라인 2장) ──
+  async function askMood() {
+    await say('근데 너 어떤 분위기 좋아?');
+    const row = document.createElement('div');
+    row.className = 'mood-row';
+    const opts = [
+      { id: 'romance', label: '로맨스', em: '💕', ds: '설레고 따뜻한 감정' },
+      { id: 'spicy', label: '자극적', em: '🔥', ds: '솔직하고 대담한 케미' },
+    ];
+    opts.forEach(o => {
+      const card = document.createElement('div');
+      card.className = `mood-card ${o.id}`;
+      card.innerHTML = `<div class="bg"></div><div class="ov"><div class="em">${o.em}</div><div><div class="ti">${o.label}</div><div class="ds">${o.ds}</div></div></div>`;
+      card.addEventListener('click', () => {
+        row.querySelectorAll('.mood-card').forEach(x => x.classList.remove('selected'));
+        card.classList.add('selected');
+        u.mood = o.id;
+        setTimeout(() => {
+          row.remove();
+          sent(o.label);
+          afterMood(o);
+        }, 300);
+      });
+      row.appendChild(card);
+    });
+    chat.appendChild(row); scroll();
+  }
+  async function afterMood(o) {
+    await delay(300);
+    await say(`${o.label} 스타일이구나`, '오케 알았음');
+    runTurn('needs');
+  }
+
+  // ── 3. 필요한 것 (다중 칩) ──
+  async function askNeeds() {
+    await say('요즘 뭐가 제일 필요함?', '여러 개 골라도 됨');
+    const wrap = document.createElement('div');
+    wrap.className = 'chips-bubble';
+    const row = document.createElement('div');
+    row.className = 'chips-row';
+    NEEDS.forEach(n => {
+      const c = document.createElement('button');
+      c.className = 'chip';
+      c.innerHTML = `<span>${n.emoji}</span>${NEED_LABELS[n.id]}`;
+      c.addEventListener('click', () => {
+        c.classList.toggle('selected');
+        const idx = u.needs.indexOf(n.id);
+        if (c.classList.contains('selected')) { if (idx === -1) u.needs.push(n.id); }
+        else if (idx > -1) u.needs.splice(idx, 1);
+        confirm.disabled = u.needs.length === 0;
+        confirm.textContent = u.needs.length ? `${u.needs.length}개 골랐어, 보내기` : '한 개 이상 골라줘';
+      });
+      row.appendChild(c);
+    });
+    const confirm = document.createElement('button');
+    confirm.className = 'chip-confirm'; confirm.disabled = true;
+    confirm.textContent = '한 개 이상 골라줘';
+    confirm.addEventListener('click', () => {
+      wrap.remove();
+      const txt = u.needs.map(id => NEED_LABELS[id]).join(', ');
+      sent(txt);
+      afterNeeds();
+    });
+    wrap.appendChild(row); wrap.appendChild(confirm);
+    chat.appendChild(wrap); scroll();
+  }
+  async function afterNeeds() {
+    await delay(300);
+    await say('오케 너 취향 파악 끝');
+    runTurn('name');
+  }
+
+  // ── 4. 이름 ──
+  async function askName() {
+    await say('마지막으로 너 정보 좀', '이름이 뭐야? 닉네임도 ㄱㄱ');
+    const wrap = document.createElement('div');
+    wrap.className = 'input-bubble';
+    wrap.innerHTML = `
+      <span class="lbl">이름 또는 닉네임</span>
+      <input type="text" id="iName" placeholder="현수가 부를 이름" maxlength="12" />
+      <button class="submit" disabled>보내기</button>`;
+    chat.appendChild(wrap); scroll();
+    const inp = wrap.querySelector('#iName'), btn = wrap.querySelector('.submit');
+    inp.focus();
+    inp.addEventListener('input', () => { btn.disabled = !inp.value.trim(); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !btn.disabled) btn.click(); });
+    btn.addEventListener('click', () => {
+      u.name = inp.value.trim();
+      wrap.remove();
+      sent(u.name);
+      afterName();
+    });
+  }
+  async function afterName() {
+    await delay(300);
+    await say(`${u.name} ㅇㅋ 좋네`);
+    runTurn('dob');
+  }
+
+  // ── 5. 생년월일 ──
+  async function askDob() {
+    await say('아 근데 너 몇살이었지?', '생일 알려줘 ㅋㅋ');
+    const wrap = document.createElement('div');
+    wrap.className = 'input-bubble';
+    const yOpts = ['<option value="">년</option>', ...Array.from({length: 2010 - 1940 + 1}, (_,i) => { const y = 2010 - i; return `<option value="${y}">${y}</option>`; })].join('');
+    const mOpts = ['<option value="">월</option>', ...Array.from({length: 12}, (_,i) => `<option value="${i+1}">${i+1}</option>`)].join('');
+    const dOpts = ['<option value="">일</option>', ...Array.from({length: 31}, (_,i) => `<option value="${i+1}">${i+1}</option>`)].join('');
+    wrap.innerHTML = `
+      <span class="lbl">생년월일</span>
+      <div class="row"><select id="iY">${yOpts}</select><select id="iM">${mOpts}</select><select id="iD">${dOpts}</select></div>
+      <button class="submit" disabled>보내기</button>
+      <span class="err" style="display:none;"></span>`;
+    chat.appendChild(wrap); scroll();
+    const yEl = wrap.querySelector('#iY'), mEl = wrap.querySelector('#iM'), dEl = wrap.querySelector('#iD');
+    const btn = wrap.querySelector('.submit'), err = wrap.querySelector('.err');
+    function chk() { btn.disabled = !(yEl.value && mEl.value && dEl.value); }
+    [yEl, mEl, dEl].forEach(s => s.addEventListener('change', chk));
+    btn.addEventListener('click', () => {
+      const y = +yEl.value, m = +mEl.value, d = +dEl.value;
+      const birth = new Date(y, m - 1, d);
+      if (isNaN(birth.getTime()) || y < 1940 || y > 2099 || m < 1 || m > 12 || d < 1 || d > 31) {
+        err.style.display = 'block'; err.textContent = '날짜 다시 확인해줘';
+        return;
+      }
+      const today = new Date(2026, 3, 22);
+      let age = today.getFullYear() - y;
+      const mDiff = today.getMonth() - (m - 1);
+      if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) age--;
+      u.dob = `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+      u.age = age;
+      wrap.remove();
+      sent(`${u.dob} · ${age}살`);
+      afterDob();
+    });
+  }
+  async function afterDob() {
+    await delay(300);
+    await say('아 ㅇㅋㅇㅋ');
+    runTurn('gender');
+  }
+
+  // ── 6. 내 성별 ──
+  async function askGender() {
+    await say('너 남자임 여자임?');
+    const row = document.createElement('div');
+    row.className = 'single-chips';
+    [{ id: 'male', label: '♂ 남자' }, { id: 'female', label: '♀ 여자' }].forEach(o => {
+      const c = document.createElement('button');
+      c.className = 'chip'; c.textContent = o.label;
+      c.addEventListener('click', () => {
+        row.remove();
+        u.gender = o.id;
+        sent(o.label);
+        afterGender(o);
+      });
+      row.appendChild(c);
+    });
+    chat.appendChild(row); scroll();
+  }
+  async function afterGender(o) {
+    await delay(300);
+    await say('오케');
+    runTurn('aiGender');
+  }
+
+  // ── 7. 상대 성별 ──
+  async function askAiGender() {
+    await say('어떤 애가 너 스타일?');
+    const row = document.createElement('div');
+    row.className = 'single-chips';
+    [{ id:'female', label:'♀ 여자' },{ id:'male', label:'♂ 남자' },{ id:'both', label:'♀♂ 둘 다' }].forEach(o => {
+      const c = document.createElement('button');
+      c.className = 'chip'; c.textContent = o.label;
+      c.addEventListener('click', () => {
+        row.remove();
+        u.aiGender = o.id;
+        sent(o.label);
+        afterAiGender(o);
+      });
+      row.appendChild(c);
+    });
+    chat.appendChild(row); scroll();
+  }
+  async function afterAiGender(o) {
+    await delay(300);
+    await say('굿', `${u.name || '너'} 정보 다 받았다 ㅋㅋ`);
+    runTurn('story-cta');
+  }
+
+  // ── 8. 유서현 짧은 스토리 시작 (선택) ──
+  async function askStoryCta() {
+    await delay(200);
+    await say('일단 한 명 보여줄게', '짧게 5분만 미리보기 해봐');
+    const btn = document.createElement('button');
+    btn.className = 'start-btn';
+    btn.innerHTML = `<div class="col"><span class="lm">유서현이랑 잠깐 만나보기</span><span class="ls">사무실 · 봄날 · 5분</span></div><span class="ar">→</span>`;
+    btn.addEventListener('click', () => {
+      btn.style.opacity = '0.7';
+      btn.querySelector('.lm').textContent = '연결 중...';
+      setTimeout(() => { btn.remove(); openVN(); }, 900);
+    });
+    chat.appendChild(btn); scroll();
+    note('우상단 건너뛰기 누르면 바로 추천으로 넘어가');
+  }
+
+  // ─── VN (유서현 짧은 스토리) ───
+  const SY_CHAR = (n) => `${SH_CHAR}/char${n}.mp4`;
+  function STORY_SCENES() {
+    const N = u.name || '선배';
+    return [
+      { speaker: null, text: '오후 1시. 사무실. 점심 후 카페인도 못 마신 당신. 책상 위 서류 더미.', img: SH_BG + '/bg1_office_afternoon.png' },
+      { speaker: '나', text: '하아... 끝이 없네.', isUser: true, img: SH_BG + '/bg1_office_afternoon.png' },
+      { speaker: null, text: '띠링— 회사 메신저 알림이 떴다.', img: SH_BG + '/bg1_office_afternoon.png' },
+      { speaker: '유서현', text: `${N} 선배!`, charVid: 1 },
+      { speaker: '유서현', text: '방금 한숨 소리 여기까지 들렸어요🥲', charVid: 1 },
+      { speaker: '유서현', text: '업무 너무 많으시죠...?ㅠㅠ', charVid: 1 },
+      { choices: [{ text:'일이 너무 많네...', next: 7 }, { text:'아니야, 괜찮아.', next: 7 }], charVid: 1 },
+      { speaker: '유서현', text: `${N} 선배 지금 얼굴, 완전 카페인 부족이라고 쓰여 있어요😂`, charVid: 2 },
+      { speaker: null, text: '서현이 사진 한 장을 보내왔다.', sentPhoto: SY_CHAR(3), charVid: 3 },
+      { speaker: '유서현', text: '저희 회사 근처에 커피 맛집 찾아뒀어요!', charVid: 3 },
+      { speaker: '유서현', text: '잠깐 같이 나갈래요?', charVid: 3 },
+      { choices: [{ text:'좋아 가자', next: 12 }, { text:'음... 다음에', next: 14 }], charVid: 3 },
+      { speaker: '나', text: '응. 잠깐 벚꽃도 볼 겸.', isUser: true, charVid: 4 },
+      { speaker: '유서현', text: '네 알겠어요 선배...! ㅎㅎ', charVid: 4 },
+      { speaker: null, text: '복도 모퉁이. 서현이 가벼운 발걸음으로 다가왔다.', img: SH_BG + '/bg2_hallway.jpg' },
+      { speaker: '유서현', text: `${N} 선배! 여기예요!`, charVid: 5 },
+      { speaker: null, text: '회사 후문을 나서자, 분홍색 터널 같은 벚꽃길이 펼쳐졌다.', img: SH_BG + '/bg3_cherry_day.jpg' },
+      { speaker: '유서현', text: '떨어지는 벚꽃잎 잡으면 소원이 이루어진대요!', charVid: 6 },
+      { speaker: '유서현', text: `${N} 선배... 오늘은 저랑 퇴근도 같이 해요!`, charVid: 6 },
+      { speaker: null, text: '두 사람 위로 따뜻한 봄 햇살과 벚꽃잎이 축복처럼 쏟아져 내리고 있었다.', img: SH_BG + '/bg4_cherry_sunset.jpg' },
+      { ending: true, title: `${N} & 유서현`, sub: '봄이 오는 사무실의 비밀 데이트. 다음 이야기는 곧.', img: SH_BG + '/bg5_office_sunset.png' },
+    ];
+  }
+  let storyIdx = 0; let storyScenes = []; let storyChar = null;
+
+  // ─── 캐릭터별 스토리 매핑 ───
+  // 유서현 = 풀 스토리 / 이서윤 = 옆집 누나 짧은 시퀀스 / 그 외 = 첫 만남 제네릭 템플릿
+  function STORY_FOR(charId) {
+    if (charId === 'seohyun') return STORY_SCENES();   // 유서현 풀 스토리
+    if (charId === 'seoyoon') return STORY_SEOYOON();  // 이서윤 옆집 누나
+    return STORY_GENERIC(charId);                       // 나머지: 첫 만남 템플릿
+  }
+
+  // ─ 이서윤 짧은 시퀀스 (재회 컨셉) ─
+  function STORY_SEOYOON() {
+    const N = u.name || '너';
+    const SY = '../assets/seoyoon';
+    return [
+      { speaker: null, text: '토요일 오후. 택배를 가지러 현관문을 연 당신.', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: null, text: '복도에 이삿짐 박스. 옆집에 누군가 이사 오는 모양이었다.', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: '이서윤', text: '으으... 이거 왜 이렇게 무거워...', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: null, text: '박스를 안고 비틀거리는 여자. 어디서 본 얼굴이었다.', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: '나', text: '... 서윤 누나?', isUser: true, img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: '이서윤', text: `어? 너... ${N}이 친구?`, img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: '이서윤', text: '세상에, 여기 사는 거였어?', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: null, text: '그녀가 환하게 웃었다. 미소 뒤에 묘하게 지친 기색.', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { choices: [{ text: '이사 도와드릴까요?', next: 9 }, { text: '오래간만이네요', next: 9 }], img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: '이서윤', text: '진짜? 도와줄 거야? 아 감동...', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { speaker: null, text: '가까이 다가가니 은은한 향이 풍겨왔다.', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+      { ending: true, title: `${N} & 이서윤`, sub: '옆집 누나와의 재회. 다음 만남이 기다려진다.', img: SY + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+    ];
+  }
+
+  // ─ 다른 캐릭터: 첫 만남 제네릭 템플릿 (이름·영상만 캐릭터별) ─
+  function STORY_GENERIC(charId) {
+    const c = CHARACTERS.find(x => x.id === charId);
+    const N = u.name || '너';
+    const charSrc = c.type === 'video' ? c.src : c.src;
+    return [
+      { speaker: null, text: '저녁. 첫 연락이 왔다.', charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: `${N}, 안녕하세요... 처음 뵙겠어요`, charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: '현수 오빠한테 얘기 많이 들었어요', charBg: charSrc, charType: c.type },
+      { speaker: null, text: '문장 끝에 작은 물음표가 맴돈다. 긴장한 것 같다.', charBg: charSrc, charType: c.type },
+      { choices: [
+        { text: '나도 반가워. 편하게 얘기해', next: 5 },
+        { text: '뭐 들었는데? ㅋㅋ', next: 6 }
+      ], charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: '아... 다행이다 ㅎㅎ', charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: 'ㅋㅋㅋ 좋은 얘기요. 오빠 다정하다고', charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: `${c.tag.split('·')[0].trim()}이라 너랑 잘 맞을 거 같다고`, charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: '오빠 오늘 하루는 어땠어요?', charBg: charSrc, charType: c.type },
+      { choices: [
+        { text: '그냥 그랬지. 너는?', next: 10 },
+        { text: '좀 피곤했어. 너 덕분에 풀리네', next: 11 }
+      ], charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: '저는 오빠랑 얘기하는 거 은근 설레요', charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: '어머 오빠 ㅠㅠ 그런 말 하면 저 진짜 설레는데', charBg: charSrc, charType: c.type },
+      { speaker: c.name, text: '근데 오빠... 저 오늘 더 얘기하고 싶은데', charBg: charSrc, charType: c.type },
+      { ending: true, title: `${N} & ${c.name}`, sub: `${c.name}과의 첫 만남. 다음 대화가 기다려진다.`, charBg: charSrc, charType: c.type },
+    ];
+  }
+
+  function openVN(charId) {
+    storyChar = charId || 'seohyun';
+    storyIdx = 0;
+    storyScenes = STORY_FOR(storyChar);
+    vn.classList.add('active');
+    renderStory();
+  }
+  function closeVN() {
+    vn.classList.remove('active');
+  }
+  function renderStory() {
+    const cur = storyScenes[storyIdx]; if (!cur) return;
+    if (cur.charVid) vnBg.innerHTML = `<video src="${SY_CHAR(cur.charVid)}" autoplay muted loop playsinline preload="metadata"></video>`;
+    else if (cur.charBg) {
+      vnBg.innerHTML = cur.charType === 'video'
+        ? `<video src="${cur.charBg}" autoplay muted loop playsinline preload="metadata"></video>`
+        : `<img src="${cur.charBg}" alt=""/>`;
+    }
+    else if (cur.img) vnBg.innerHTML = `<img src="${cur.img}" alt=""/>`;
+    vnArea.innerHTML = '';
+    if (cur.ending) {
+      vnArea.innerHTML = `
+        <div style="background:rgba(0,0,0,0.78);color:#fff;border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-family:'Nanum Myeongjo',serif;font-size:24px;font-weight:700;margin-bottom:6px;letter-spacing:-0.5px;">${cur.title}</div>
+          <div style="font-family:var(--font-sans);font-size:13px;line-height:20px;opacity:0.85;letter-spacing:-0.25px;margin-bottom:18px;">${cur.sub}</div>
+          <button id="storyDone" style="width:100%;padding:14px;background:var(--gradient-brand);color:#fff;border:0;border-radius:10px;font-family:var(--font-sans);font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 6px 18px rgba(255,94,25,0.35);">다른 사람도 만나보기 →</button>
+        </div>`;
+      $('storyDone').addEventListener('click', () => { closeVN(); runTurn('home-rec'); });
+      return;
+    }
+    if (cur.choices) {
+      const wrap = document.createElement('div');
+      wrap.className = 'vn-choices';
+      cur.choices.forEach(c => {
+        const b = document.createElement('button');
+        b.className = 'vn-choice'; b.textContent = c.text;
+        b.addEventListener('click', () => { storyIdx = c.next; renderStory(); });
+        wrap.appendChild(b);
+      });
+      vnArea.appendChild(wrap);
+      return;
+    }
+    if (cur.sentPhoto) {
+      const p = document.createElement('div');
+      p.className = 'vn-sent-photo';
+      p.innerHTML = `<video src="${cur.sentPhoto}" autoplay muted loop playsinline preload="metadata"></video>`;
+      vnArea.appendChild(p);
+    }
+    const w = document.createElement('div');
+    w.className = 'vn-dialogue';
+    w.onclick = () => { storyIdx++; renderStory(); };
+    if (cur.isUser) w.innerHTML = `<div class="vn-speaker user">${cur.speaker || '나'}</div><div class="vn-text">${cur.text}</div>`;
+    else if (cur.speaker) w.innerHTML = `<div class="vn-speaker npc">${cur.speaker}</div><div class="vn-text">${cur.text}</div>`;
+    else w.innerHTML = `<div class="vn-text narration">${cur.text}</div>`;
+    vnArea.appendChild(w);
+    const h = document.createElement('div'); h.className = 'vn-tap'; h.textContent = '탭하여 진행 ›';
+    vnArea.appendChild(h);
+  }
+  $('vnBackBtn').addEventListener('click', () => { closeVN(); runTurn('home-rec'); });
+  $('vnSkipBtn').addEventListener('click', () => { closeVN(); runTurn('home-rec'); });
+
+  // ── 9. 홈: 5명 추천 (같은 카톡 이어서) ──
+  function buildRecQueue() {
+    const sel = u.selectedChar;
+    const ordered = [];
+    if (sel) ordered.push(CHARACTERS.find(c => c.id === sel));
+    CHARACTERS.forEach(c => { if (!sel || c.id !== sel) ordered.push(c); });
+    return ordered;
+  }
+  let recQueue = []; let recIdx = 0;
+
+  async function startRecommendations() {
+    skipBtn.style.display = 'none';  // 추천 단계에선 건너뛰기 숨김
+    setHeader('hyunsu');
+    recQueue = buildRecQueue(); recIdx = 0;
+    note('온보딩 끝 · 추천 시작');
+    await delay(500);
+    const N = u.name || '너';
+    await say(`${N} 정보 받고 5명 추천 골랐음`, '한 명씩 보여줄게');
+    runRec(recIdx);
+  }
+
+  async function runRec(i) {
+    const c = recQueue[i]; if (!c) return endHome();
+    const N = u.name || '너';
+    const lines = i === 0
+      ? [`첫번째는 너가 골랐던 ${c.name} ㅋㅋ`, `${c.name}, ${c.age}살이고 ${c.tag}임`, '진짜 너랑 잘 맞을 듯']
+      : [`다음은 ${c.name}`, `${c.age}살, ${c.tag}`, '얘도 ㄹㅇ 괜찮음'];
+    for (const l of lines) await say(l);
+    await typing(900);
+    const card = document.createElement('div');
+    card.className = 'rec-card';
+    card.dataset.charId = c.id;  // 라이트박스 식별용
+    const isLocked = i >= 2;     // 3번째(인덱스 2)부터 블러 잠금
+    if (isLocked) card.classList.add('locked');
+    const media = c.type === 'video'
+      ? `<video src="${c.src}" autoplay muted loop playsinline preload="metadata"></video>`
+      : `<img class="thumb" src="${c.src}" alt=""/>`;
+    const lockOverlay = isLocked ? `
+      <div class="lock-ov">
+        <div class="lock-circle">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div class="lock-label">${c.name} · ${c.age}</div>
+        <div class="lock-tap">탭해서 사진 보기</div>
+      </div>` : '';
+    card.innerHTML = `${media}${lockOverlay}<div class="rec-info"><div class="nr"><div class="nm">${c.name}</div><div class="ag">${c.age}</div></div><div class="tg">${c.tag}</div></div>`;
+    if (isLocked) {
+      // 탭하면 블러 풀림 (시각적으로만)
+      card.querySelector('.lock-ov').addEventListener('click', e => {
+        e.stopPropagation();
+        card.classList.remove('locked');
+      });
+    }
+    chat.appendChild(card); scroll();
+    await delay(300);
+    appendRecChoices(c);
+  }
+
+  function appendRecChoices(c) {
+    const w = document.createElement('div');
+    w.className = 'ar-choices';
+    w.innerHTML = `<button class="accept">괜찮은데?</button><button class="reject">난 별로</button>`;
+    w.querySelector('.accept').addEventListener('click', async () => {
+      w.remove();
+      sent('괜찮은데? 얘기해봐');
+      await delay(700);
+      await say('오케 그럼 내가 연결해줌 ㅋㅋ');
+      const btn = document.createElement('button');
+      btn.className = 'start-btn';
+      btn.innerHTML = `<div class="col"><span class="lm">${c.name}한테 가기</span><span class="ls">첫 대화 시작</span></div><span class="ar">→</span>`;
+      btn.addEventListener('click', async () => {
+        btn.style.opacity = '0.7'; btn.querySelector('.lm').textContent = '연결 중...';
+        await delay(1100);
+        btn.remove();
+        // 유서현처럼 바로 VN 스토리 시작 (캐릭터 ID로 시나리오 선택)
+        openVN(c.id);
+      });
+      chat.appendChild(btn); scroll();
+    });
+    w.querySelector('.reject').addEventListener('click', async () => {
+      w.remove();
+      sent('음... 난 별로');
+      await delay(600);
+      await say('ㅋㅋ 알겠어 다음');
+      advanceRec();
+    });
+    chat.appendChild(w); scroll();
+  }
+
+  async function advanceRec() {
+    recIdx++;
+    if (recIdx >= recQueue.length) return endHome();
+    await delay(400);
+    runRec(recIdx);
+  }
+  async function endHome() {
+    await delay(500);
+    note('오늘의 소개는 여기까지');
+    await delay(400);
+    // 10코인으로 5명 더 보기 CTA
+    const btn = document.createElement('button');
+    btn.className = 'start-btn';
+    btn.style.background = 'var(--gradient-brand)';
+    btn.innerHTML = `
+      <div class="col">
+        <span class="lm" style="display:flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#FFE082,#FFB300);border:2px solid #FF8F00;"></span>
+          10코인 내고 5명 더 보기
+        </span>
+        <span class="ls">새 추천 5명을 즉시 받아보기</span>
+      </div>
+      <span class="ar">→</span>`;
+    btn.addEventListener('click', () => {
+      btn.style.opacity = '0.7';
+      btn.querySelector('.lm').lastChild.textContent = '연결 중...';
+      setTimeout(() => {
+        btn.remove();
+        note('5명 추가 추천 ✨');
+        // 새 5명 추천 시작 (같은 로직 재사용, 인덱스 리셋)
+        recIdx = 0;
+        recQueue = buildRecQueue();
+        setTimeout(() => runRec(0), 400);
+      }, 1100);
+    });
+    chat.appendChild(btn); scroll();
+  }
+
+  // ─── Lightbox (썸네일 풀스크린) ───
+  const lightbox = $('lightbox');
+  const lightboxMedia = $('lightboxMedia');
+  const lightboxInfo = $('lightboxInfo');
+  function openLightbox(c) {
+    const media = c.type === 'video'
+      ? `<video src="${c.src}" autoplay muted loop playsinline></video>`
+      : `<img src="${c.src}" alt=""/>`;
+    lightboxMedia.innerHTML = media;
+    lightboxInfo.innerHTML = `<b style="font-weight:800;">${c.name}</b> · ${c.age} · ${c.tag}`;
+    lightbox.classList.add('show');
+  }
+  function closeLightbox() {
+    lightbox.classList.remove('show');
+    lightboxMedia.innerHTML = '';
+  }
+  lightbox.addEventListener('click', e => {
+    // 미디어 자체 클릭은 닫기 안 함 (정보만 보고 싶을 때)
+    if (e.target.closest('.lightbox-media')) return;
+    closeLightbox();
+  });
+  $('lightboxClose').addEventListener('click', closeLightbox);
+
+  // 캐릭터 객체 빠른 조회
+  function findChar(id) { return CHARACTERS.find(x => x.id === id); }
+
+  // 썸네일 클릭 → 라이트박스
+  // 추천 카드(rec-card): 카드 자체 액션 없음 → 탭하면 풀스크린
+  // 온보딩 캐릭터 사진(photo-msg): 탭=선택 동작이 우선. 라이트박스는 선택 후 다시 클릭/길게 누름으로 보고 싶다면 별도.
+  chat.addEventListener('click', e => {
+    const recCard = e.target.closest('.rec-card');
+    if (recCard && recCard.dataset.charId) {
+      const c = findChar(recCard.dataset.charId);
+      if (c) openLightbox(c);
+      return;
+    }
+  });
+
+  // ─── Dev controls ───
+  $('devReset').addEventListener('click', () => location.reload());
+  $('devSkipAll').addEventListener('click', () => {
+    if (vn.classList.contains('active')) closeVN();
+    document.querySelectorAll('.deck, .mood-row, .chips-bubble, .input-bubble, .single-chips, .start-btn').forEach(el => el.remove());
+    welcome.classList.add('hidden');
+    chat.innerHTML = '';
+    runTurn('home-rec');
+  });
+
+  // 초기: 페이지 로드 시 welcome 보임. 시작하기 누르면 채팅 진입.
+</script>
+</body>
+</html>

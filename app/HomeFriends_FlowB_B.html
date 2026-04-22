@@ -1,0 +1,1810 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Rizz · Flow B — 재설계 풀 플로우</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script>if (location.hash === '#embed') document.documentElement.setAttribute('data-embed','1');</script>
+<style>
+  html[data-embed="1"] body { background: transparent !important; margin: 0 !important; padding: 0 !important; }
+  html[data-embed="1"] .page { padding: 0 !important; min-height: 0 !important; gap: 0 !important; }
+  html[data-embed="1"] .page > *:not(.phone) { display: none !important; }
+
+  html, body { margin: 0; padding: 0; background: #0E0E10; font-family: var(--font-sans); letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  .page { min-height: 100vh; padding: 56px 48px 120px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  .page-head { max-width: 560px; text-align: center; color: #EDEEF1; }
+  .eyebrow { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-primary-500); margin-bottom: 12px; }
+  .page-h1 { font-weight: 800; font-size: 32px; letter-spacing: -0.6px; line-height: 1.15; margin: 0 0 10px; color: #fff; }
+  .page-sub { font-size: 14px; color: rgba(237,238,241,0.6); letter-spacing: -0.25px; line-height: 1.55; }
+
+  .phone { width: 393px; height: 852px; border-radius: 47px; border: 10px solid #1A1A1A; box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.1); overflow: hidden; background: #fff; flex-shrink: 0; position: relative; display: flex; flex-direction: column; }
+  .island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 50; }
+
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px 0 32px; font-family: -apple-system, system-ui; color: var(--color-gray-950); flex-shrink: 0; position: relative; z-index: 3; }
+  .status-bar .time { font-size: 15.72px; font-weight: 600; letter-spacing: -0.4px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+
+  /* Stages */
+  .stage { position: absolute; inset: 0; background: #fff; display: flex; flex-direction: column; transition: opacity .4s ease; z-index: 1; }
+  .stage.hidden { opacity: 0; pointer-events: none; }
+
+  /* ─── Welcome ─── */
+  .stage-welcome { z-index: 5; padding: 56px 28px 24px; justify-content: space-between; }
+  .welcome-top { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .welcome-logo {
+    width: 132px; height: 132px; border-radius: 50%;
+    background: var(--gradient-brand);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 16px 40px rgba(255,94,25,0.35);
+    margin-bottom: 28px;
+    position: relative; overflow: hidden;
+  }
+  .welcome-logo::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.3), transparent 55%); }
+  .welcome-logo svg { width: 74px; height: auto; z-index: 1; }
+  .welcome-title { font-family: var(--font-sans); font-weight: 800; font-size: 26px; line-height: 1.3; letter-spacing: -0.5px; color: var(--color-gray-950); margin-bottom: 10px; }
+  .welcome-sub { font-family: var(--font-sans); font-size: 14px; line-height: 22px; letter-spacing: -0.25px; color: var(--color-gray-700); max-width: 280px; }
+
+  .primary-btn { width: 100%; height: 55px; border: 0; border-radius: 8px; background: var(--color-primary-500); color: #fff; font-family: var(--font-sans); font-weight: 700; font-size: 18px; letter-spacing: -0.25px; cursor: pointer; transition: background 140ms, transform 100ms; }
+  .primary-btn:active { transform: scale(0.98); }
+  .primary-btn.cta-gradient { background: var(--gradient-brand); box-shadow: 0 6px 18px rgba(255,94,25,0.32); }
+  .primary-btn:disabled { background: var(--color-gray-300); color: #F9F6F5; cursor: not-allowed; box-shadow: none; }
+
+  /* ─── Main (chat flow) ─── */
+  .header-bar { height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; background: #fff; flex-shrink: 0; border-bottom: 1px solid var(--color-gray-100); }
+  .header-title { font-family: var(--font-sans); font-weight: 800; font-size: 17px; color: var(--color-gray-950); letter-spacing: -0.4px; }
+  .coin-pill { position: relative; border: 1px solid var(--color-gray-200); border-radius: 9.5px; padding: 2px 8px 2px 16px; height: 19px; font-family: var(--font-sans); font-size: 11px; font-weight: 400; color: var(--color-gray-950); display: inline-flex; align-items: center; letter-spacing: -0.3144px; background: #fff; }
+  .coin-pill img { position: absolute; left: -5px; top: -5px; width: 30px; height: 30px; }
+
+  .chat-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--color-gray-100); flex-shrink: 0; transition: background .4s; }
+  .ch-avatar { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: background .4s; overflow: hidden; }
+  .ch-avatar video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ch-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .ch-name { font-family: var(--font-sans); font-weight: 700; font-size: 15px; color: var(--color-gray-950); letter-spacing: -0.25px; transition: color .4s; }
+  .ch-sub { font-family: var(--font-sans); font-size: 11px; color: var(--color-gray-500); letter-spacing: -0.3144px; display: flex; align-items: center; gap: 4px; }
+  .ch-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent-success); }
+  .ch-lv { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 100px; background: var(--color-primary-500); color: #fff; font-family: var(--font-sans); font-weight: 700; font-size: 9px; letter-spacing: -0.15px; margin-left: 4px; }
+
+  .body-scroll { flex: 1; overflow-y: auto; background: var(--color-gray-50); position: relative; }
+  .chat { padding: 14px 14px 20px; display: flex; flex-direction: column; gap: 4px; }
+
+  .bubble-recv { align-self: flex-start; max-width: 260px; padding: 9px 14px; background: #fff; color: var(--color-gray-950); border-radius: 4px 18px 18px 18px; font-family: var(--font-latin); font-size: 15px; line-height: 20px; letter-spacing: -0.003em; word-break: break-word; border: 1px solid var(--color-gray-100); margin-bottom: 2px; }
+  .bubble-sent { align-self: flex-end; max-width: 240px; padding: 9px 14px; background: var(--color-accent-sent); color: var(--color-gray-950); border-radius: 18px 18px 4px 18px; font-family: var(--font-latin); font-size: 15px; line-height: 20px; letter-spacing: -0.003em; margin-top: 4px; margin-bottom: 6px; }
+
+  .typing-bubble { align-self: flex-start; padding: 12px 14px; background: #fff; border-radius: 4px 18px 18px 18px; display: inline-flex; gap: 4px; align-items: center; border: 1px solid var(--color-gray-100); margin-top: 4px; margin-bottom: 4px; }
+  .typing-bubble span { width: 6px; height: 6px; border-radius: 50%; background: var(--color-gray-500); }
+  .typing-bubble span:nth-child(1) { animation: rzTyping 1.2s ease-in-out 0s infinite; }
+  .typing-bubble span:nth-child(2) { animation: rzTyping 1.2s ease-in-out 0.18s infinite; }
+  .typing-bubble span:nth-child(3) { animation: rzTyping 1.2s ease-in-out 0.36s infinite; }
+  @keyframes rzTyping { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+  /* User choice bubbles */
+  .choice-stack { align-self: flex-end; display: flex; flex-direction: column; gap: 6px; margin-top: 6px; margin-bottom: 8px; max-width: 280px; }
+  .choice-bubble {
+    padding: 10px 14px; background: #fff;
+    border: 1.5px solid var(--color-primary-300); border-radius: 18px 18px 4px 18px;
+    font-family: var(--font-latin); font-size: 14px; line-height: 18px;
+    color: var(--color-gray-950); cursor: pointer; text-align: left;
+    transition: all 140ms;
+  }
+  .choice-bubble:hover { background: var(--color-primary-50); border-color: var(--color-primary-500); }
+  .choice-bubble:active { transform: scale(0.98); }
+
+  /* Inline analysis card (emits during chat) */
+  .analysis-card {
+    align-self: flex-start; width: 260px; margin: 8px 0;
+    background: linear-gradient(135deg, rgba(255,94,25,0.08), rgba(255,94,25,0.02));
+    border: 1px solid rgba(255,94,25,0.25); border-radius: 14px; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .analysis-head { font-family: var(--font-sans); font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-primary-500); display: flex; align-items: center; gap: 6px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,94,25,0.2); border-top-color: var(--color-primary-500); border-radius: 50%; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .analysis-logs { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-sans); font-size: 11px; color: var(--color-gray-700); letter-spacing: -0.25px; }
+  .log-line { opacity: 0.4; transition: opacity .2s; }
+  .log-line.done { opacity: 1; }
+  .log-line.done::before { content: '✓ '; color: var(--color-primary-500); font-weight: 700; }
+  .analysis-result { font-family: var(--font-sans); font-weight: 700; font-size: 14px; color: var(--color-gray-950); letter-spacing: -0.25px; margin-top: 4px; }
+  .analysis-result b { color: var(--color-primary-500); font-size: 16px; font-weight: 800; }
+
+  /* Match result card (3 inline mini-cards as chat attachment) */
+  .match-cards-inline { align-self: flex-start; width: 280px; display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+  .mc-wrap { display: flex; flex-direction: row; gap: 2px; margin-bottom: 4px; }
+  .mini-card {
+    display: flex; gap: 10px; padding: 8px; background: #fff;
+    border: 1px solid var(--color-gray-100); border-radius: 12px;
+    cursor: pointer; transition: all .15s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .mini-card:hover { border-color: var(--color-primary-300); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+  .mini-card:active { transform: scale(0.99); }
+  .mini-card.top { border: 1.5px solid var(--color-primary-500); position: relative; }
+  .mini-card.top::after {
+    content: 'BEST'; position: absolute; top: -7px; right: 10px;
+    background: var(--gradient-brand); color: #fff;
+    font-family: var(--font-sans); font-weight: 800; font-size: 9px;
+    padding: 2px 7px; border-radius: 100px; letter-spacing: 0.4px;
+  }
+  .mini-thumb { width: 64px; height: 86px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: var(--color-gray-100); }
+  .mini-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mini-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 2px 0; }
+  .mini-name-row { display: flex; align-items: baseline; gap: 4px; }
+  .mini-name { font-family: var(--font-sans); font-weight: 800; font-size: 14px; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .mini-age { font-family: var(--font-sans); font-size: 12px; color: var(--color-gray-700); }
+  .mini-match { display: inline-flex; align-self: flex-start; padding: 1px 6px; border-radius: 100px; background: rgba(255,94,25,0.1); color: var(--color-primary-500); font-family: var(--font-sans); font-weight: 700; font-size: 10px; letter-spacing: -0.25px; margin-top: 1px; }
+  .mini-hook { font-family: var(--font-sans); font-size: 11px; line-height: 14px; color: var(--color-gray-700); letter-spacing: -0.25px; margin-top: 3px; }
+
+  /* Connection transition overlay */
+  .connecting-overlay {
+    position: absolute; inset: 0; background: rgba(255,255,255,0.96);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; z-index: 20;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+  }
+  .connecting-overlay.show { opacity: 1; pointer-events: auto; }
+  .conn-spinner {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--color-primary-500), rgba(255,94,25,0.2), var(--color-primary-500));
+    animation: spin 1.2s linear infinite;
+    position: relative;
+  }
+  .conn-spinner::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: #fff; }
+  .conn-text { font-family: var(--font-sans); font-weight: 700; font-size: 16px; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .conn-sub { font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-700); letter-spacing: -0.25px; }
+
+  /* Level-up toast */
+  .level-toast {
+    position: absolute; top: 120px; left: 50%; transform: translateX(-50%) translateY(-30px);
+    padding: 14px 20px; background: var(--gradient-brand); color: #fff;
+    border-radius: 16px; box-shadow: 0 12px 30px rgba(255,94,25,0.45);
+    font-family: var(--font-sans); letter-spacing: -0.25px;
+    z-index: 30; opacity: 0; pointer-events: none;
+    transition: opacity .4s, transform .4s cubic-bezier(0.2, 0, 0, 1.3);
+    display: flex; align-items: center; gap: 12px;
+    white-space: nowrap;
+  }
+  .level-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .level-toast-icon { font-size: 24px; }
+  .level-toast-text { display: flex; flex-direction: column; gap: 1px; }
+  .level-toast-title { font-weight: 800; font-size: 14px; }
+  .level-toast-sub { font-weight: 400; font-size: 11px; opacity: 0.9; }
+
+  /* Purchase popup (centered overlay) */
+  .popup-backdrop { position: absolute; inset: 0; z-index: 100; background: rgba(26,26,26,0.5); display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .24s; }
+  .popup-backdrop.show { opacity: 1; pointer-events: auto; }
+  .popup-card {
+    width: 100%; max-width: 320px; background: #fff; border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(26,26,26,0.2); padding: 24px 20px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    transform: scale(0.94) translateY(12px); transition: transform .24s cubic-bezier(0.2, 0, 0, 1);
+  }
+  .popup-backdrop.show .popup-card { transform: scale(1) translateY(0); }
+  .popup-hero { width: 80px; height: 80px; border-radius: 50%; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.15); border: 3px solid #fff; margin-bottom: 2px; }
+  .popup-hero video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .popup-title { font-family: var(--font-sans); font-weight: 800; font-size: 20px; line-height: 1.3; color: var(--color-gray-950); letter-spacing: -0.4px; text-align: center; margin: 0; }
+  .popup-desc { font-family: var(--font-sans); font-size: 14px; line-height: 20px; color: var(--color-gray-700); letter-spacing: -0.25px; text-align: center; margin: 0 0 4px; }
+  .popup-offer {
+    width: 100%; padding: 12px 14px; background: var(--color-gray-50);
+    border-radius: 12px; border: 1px dashed var(--color-gray-200);
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-800); letter-spacing: -0.25px;
+  }
+  .popup-offer .price { font-weight: 800; color: var(--color-gray-950); display: flex; align-items: center; gap: 6px; }
+  .popup-offer .discount-tag { font-size: 10px; padding: 2px 6px; background: var(--color-primary-500); color: #fff; border-radius: 100px; font-weight: 800; margin-left: 6px; letter-spacing: 0.2px; }
+  .popup-offer .old-price { text-decoration: line-through; color: var(--color-gray-500); font-weight: 400; margin-right: 4px; }
+  .popup-actions { display: flex; gap: 8px; width: 100%; margin-top: 8px; }
+  .popup-btn { flex: 1; height: 48px; border: 0; border-radius: 8px; font-family: var(--font-sans); font-weight: 700; font-size: 15px; letter-spacing: -0.25px; cursor: pointer; transition: background 140ms, transform 100ms; }
+  .popup-btn:active { transform: scale(0.98); }
+  .popup-btn.secondary { background: var(--color-gray-50); color: var(--color-gray-800); }
+  .popup-btn.primary { background: var(--gradient-brand); color: #fff; box-shadow: 0 4px 14px rgba(255,94,25,0.32); }
+
+  /* Lv.3 exclusive content card (chat attachment) */
+  .exclusive-card {
+    align-self: flex-start; width: 240px; margin: 8px 0;
+    background: #1A1A1E; border-radius: 16px; overflow: hidden;
+    position: relative; aspect-ratio: 240 / 320;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+    cursor: pointer;
+  }
+  .exclusive-card video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(18px) brightness(0.55); transform: scale(1.12); }
+  .exclusive-lock-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+    color: #fff;
+  }
+  .ex-tag {
+    padding: 3px 10px; border-radius: 100px;
+    background: var(--gradient-brand); color: #fff;
+    font-family: var(--font-sans); font-weight: 800; font-size: 10px; letter-spacing: 0.4px;
+    margin-bottom: 2px;
+  }
+  .ex-title { font-family: var(--font-sans); font-weight: 800; font-size: 15px; letter-spacing: -0.25px; }
+  .ex-sub { font-family: var(--font-sans); font-size: 11px; letter-spacing: -0.25px; opacity: 0.85; max-width: 180px; text-align: center; }
+  .ex-coin-chip { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 1000px; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); font-family: var(--font-sans); font-weight: 700; font-size: 12px; color: #fff; letter-spacing: -0.25px; margin-top: 4px; }
+  .ex-coin-chip img { width: 16px; height: 16px; }
+
+  /* Session end card */
+  .session-end-card {
+    align-self: center; width: 280px; margin: 14px 0 10px;
+    background: var(--gradient-brand); color: #fff; border-radius: 16px; padding: 18px;
+    text-align: center; box-shadow: 0 10px 24px rgba(255,94,25,0.3);
+  }
+  .se-streak { font-family: var(--font-sans); font-weight: 800; font-size: 24px; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .se-title { font-family: var(--font-sans); font-weight: 700; font-size: 14px; letter-spacing: -0.25px; }
+  .se-sub { font-family: var(--font-sans); font-size: 12px; letter-spacing: -0.25px; opacity: 0.9; margin-top: 4px; line-height: 17px; }
+  .se-btn { margin-top: 12px; padding: 10px 16px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 1000px; color: #fff; font-family: var(--font-sans); font-weight: 700; font-size: 13px; letter-spacing: -0.25px; cursor: pointer; backdrop-filter: blur(8px); }
+  .se-btn:hover { background: rgba(255,255,255,0.3); }
+
+  /* ─── Tomorrow stage (D+1 push preview) ─── */
+  .stage-tomorrow { background: linear-gradient(160deg, #1a1a2e, #0e0e10); padding: 56px 20px 24px; }
+  .tom-time { color: rgba(255,255,255,0.95); font-family: -apple-system, system-ui; font-size: 64px; font-weight: 300; text-align: center; letter-spacing: -2px; margin-bottom: 4px; text-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+  .tom-date { color: rgba(255,255,255,0.7); font-family: var(--font-sans); font-size: 15px; font-weight: 500; text-align: center; letter-spacing: -0.25px; margin-bottom: 24px; }
+  .tom-pushes { display: flex; flex-direction: column; gap: 10px; }
+  .tom-push {
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
+    border-radius: 14px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    animation: pushIn .5s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .tom-push:nth-child(1) { animation-delay: .2s; }
+  .tom-push:nth-child(2) { animation-delay: .7s; }
+  @keyframes pushIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  .tom-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--gradient-brand); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-sans); font-weight: 800; font-size: 14px; overflow: hidden; }
+  .tom-icon video { width: 100%; height: 100%; object-fit: cover; }
+  .tom-body { flex: 1; min-width: 0; }
+  .tom-app { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-sans); font-size: 11px; font-weight: 600; color: var(--color-gray-700); letter-spacing: -0.25px; margin-bottom: 2px; }
+  .tom-app .tom-time-ago { color: var(--color-gray-500); font-weight: 400; }
+  .tom-title { font-family: var(--font-sans); font-weight: 700; font-size: 14px; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .tom-msg { font-family: var(--font-sans); font-size: 13px; line-height: 18px; color: var(--color-gray-800); letter-spacing: -0.25px; margin-top: 2px; }
+
+  .tom-swipe { color: rgba(255,255,255,0.6); font-family: var(--font-sans); font-size: 12px; text-align: center; margin-top: auto; padding-bottom: 40px; letter-spacing: -0.25px; }
+  .tom-restart { padding: 8px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 100px; color: #fff; font-family: var(--font-sans); font-weight: 600; font-size: 12px; letter-spacing: -0.25px; cursor: pointer; margin-top: 24px; align-self: center; }
+
+  /* Bottom nav */
+  .bottom-nav { height: 83px; background: #fff; border-top: 1px solid var(--color-gray-100); display: flex; justify-content: space-between; padding: 12px 0 20px; flex-shrink: 0; position: relative; z-index: 10; }
+  .nav-item { flex: 1; border: 0; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; }
+  .nav-item svg { stroke: var(--color-gray-500); }
+  .nav-item .nav-label { font-family: var(--font-sans); font-size: 11px; letter-spacing: -0.25px; font-weight: 400; color: var(--color-gray-500); }
+  .nav-item.active svg { stroke: var(--color-primary-500); }
+  .nav-item.active .nav-label { color: var(--color-primary-500); font-weight: 700; }
+  .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 139px; height: 5px; border-radius: 100px; background: rgba(0,0,0,0.3); }
+
+  /* ═══════════════════════════════════════════ */
+  /* B 시안 — 폼 기반 온보딩                       */
+  /* ═══════════════════════════════════════════ */
+  .ob-screen { position: absolute; inset: 0; z-index: 7; background: #fff; display: none; flex-direction: column; }
+  .ob-screen.show { display: flex; }
+  .ob-screen-top {
+    height: 46px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; flex-shrink: 0;
+  }
+  .ob-screen-back { width: 32px; height: 32px; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .ob-screen-skip { background: transparent; border: 0; padding: 6px 8px; font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-500); letter-spacing: -0.25px; cursor: pointer; }
+  .ob-screen-body { flex: 1; padding: 4px 24px 0; overflow-y: auto; }
+  .ob-title { font-family: var(--font-sans); font-weight: 800; font-size: 22px; line-height: 1.3; color: var(--color-gray-950); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .ob-subtitle { font-family: var(--font-sans); font-size: 13px; line-height: 18px; color: var(--color-gray-700); letter-spacing: -0.25px; margin-bottom: 28px; }
+  .ob-field { margin-bottom: 24px; }
+  .ob-field-label { font-family: var(--font-sans); font-weight: 700; font-size: 14px; color: var(--color-gray-950); letter-spacing: -0.25px; margin-bottom: 10px; display: block; }
+  .ob-dob-row { display: flex; gap: 8px; align-items: stretch; }
+  .ob-dob-cell { flex: 1; position: relative; }
+  .ob-dob-cell select {
+    width: 100%; height: 48px; padding: 0 14px;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--color-gray-950);
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-100); border-radius: 10px;
+    appearance: none; -webkit-appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c8c8c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .ob-dob-cell select:focus { outline: none; border-color: var(--color-primary-500); background-color: #fff; }
+  .ob-radio-row { display: flex; gap: 10px; }
+  .ob-radio {
+    flex: 1; height: 92px;
+    border: 1.5px solid var(--color-gray-200);
+    background: #fff; border-radius: 12px;
+    cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    transition: all .15s;
+    font-family: var(--font-sans);
+  }
+  .ob-radio.selected { border-color: var(--color-primary-500); background: rgba(255,94,25,0.06); }
+  .ob-radio .radio-icon { font-size: 26px; line-height: 1; font-weight: 600; }
+  .ob-radio.male .radio-icon { color: #4A8FF5; }
+  .ob-radio.female .radio-icon { color: #E15B8A; }
+  .ob-radio .radio-label { font-weight: 700; font-size: 14px; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .ob-radio.selected .radio-label { color: var(--color-primary-500); }
+  .ob-screen-footer { padding: 12px 18px 24px; background: #fff; flex-shrink: 0; }
+  .ob-cta {
+    width: 100%; height: 55px; border: 0; border-radius: 1000px;
+    background: var(--color-primary-500); color: #fff;
+    font-family: var(--font-sans); font-weight: 700; font-size: 17px;
+    letter-spacing: -0.25px; cursor: pointer;
+    transition: background .14s, transform .1s;
+  }
+  .ob-cta:active { transform: scale(0.98); }
+  .ob-cta:disabled { background: var(--color-gray-300); color: #F9F6F5; cursor: not-allowed; }
+
+  /* 테마 칩 */
+  .ob-screen-body.theme { padding: 4px 20px 0; }
+  .theme-help {
+    font-family: var(--font-sans); font-size: 12px; color: var(--color-gray-700);
+    letter-spacing: -0.25px; line-height: 18px; margin-bottom: 18px;
+  }
+  .theme-section-label {
+    font-family: var(--font-sans); font-weight: 700; font-size: 11px;
+    color: var(--color-gray-500); letter-spacing: 0.5px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .theme-chips {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px;
+  }
+  .theme-chip {
+    padding: 7px 12px; border-radius: 100px;
+    background: #fff; border: 1px solid var(--color-gray-200);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    color: var(--color-gray-950); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all .14s; line-height: 1.2;
+  }
+  .theme-chip:hover { border-color: var(--color-gray-400); }
+  .theme-chip.selected {
+    background: rgba(255,94,25,0.12);
+    border-color: var(--color-primary-500);
+    color: var(--color-primary-700);
+    font-weight: 700;
+  }
+  .theme-counter {
+    text-align: center; font-family: var(--font-sans); font-size: 12px; color: var(--color-gray-500);
+    letter-spacing: -0.25px; margin: 16px 0 8px;
+  }
+  .theme-counter b { color: var(--color-primary-500); font-weight: 700; }
+
+  /* ═══════════════════════════════════════════ */
+  /* VN MODE (이서윤 스토리)                       */
+  /* ═══════════════════════════════════════════ */
+  .vn-game-overlay { position: absolute; inset: 0; z-index: 80; display: none; flex-direction: column; background: #000; }
+  .vn-game-overlay.active { display: flex; }
+  .vn-bg { position: absolute; inset: 0; background: #111; cursor: pointer; z-index: 1; }
+  .vn-bg img { width: 100%; height: 100%; object-fit: cover; transition: opacity .4s; }
+  .vn-top-bar {
+    position: relative; z-index: 10;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 56px 16px 14px;
+  }
+  .vn-back-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: none; background: rgba(0,0,0,0.35); backdrop-filter: blur(8px);
+    color: #fff; font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .vn-coins-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 100px;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(8px);
+    color: #fff; font-family: var(--font-sans); font-weight: 700; font-size: 13px;
+    letter-spacing: -0.25px;
+  }
+  .vn-coin-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #FFE082, #FFB300);
+    border: 1.5px solid #FF8F00;
+  }
+  .vn-dialogue-area {
+    position: relative; z-index: 10;
+    margin-top: auto;
+    padding: 0 16px 24px;
+    display: flex; flex-direction: column;
+  }
+  .vn-dialogue { cursor: pointer; }
+  .vn-speaker-badge {
+    display: inline-block; padding: 5px 14px; border-radius: 20px;
+    font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+    letter-spacing: -0.25px;
+    margin-bottom: -14px; position: relative; z-index: 1;
+  }
+  .vn-speaker-badge.npc { background: var(--color-primary-500); color: #fff; }
+  .vn-speaker-badge.user { background: #1a1a1a; color: #fff; align-self: flex-end; margin-left: auto; display: block; width: fit-content; }
+  .vn-dialogue-text {
+    border-radius: 14px; padding: 18px 20px;
+    font-family: var(--font-sans); font-size: 15px; line-height: 1.6;
+    min-height: 60px; clear: both;
+    animation: vnFadeIn .3s ease;
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(6px);
+    color: var(--color-gray-950); letter-spacing: -0.25px;
+  }
+  .vn-dialogue-text.narration { background: rgba(0,0,0,0.78); color: #fff; font-weight: 500; }
+  @keyframes vnFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .vn-tap-hint {
+    text-align: right; padding: 6px 4px 0;
+    font-family: var(--font-sans); font-size: 11px;
+    color: rgba(255,255,255,0.6); letter-spacing: -0.25px;
+    animation: blinkTap 1.4s ease-in-out infinite;
+  }
+  @keyframes blinkTap { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .vn-choices { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+  .vn-choice-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-radius: 12px;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    cursor: pointer; border: none; text-align: left; gap: 12px;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+    color: var(--color-gray-950);
+    animation: vnFadeIn .35s ease both;
+    overflow: visible; position: relative;
+  }
+  .vn-choice-btn * { pointer-events: none; }
+  .vn-choice-btn:nth-child(2) { animation-delay: 0.1s; }
+  .vn-choice-btn:nth-child(3) { animation-delay: 0.2s; }
+  .vn-choice-btn.premium { border: 1px solid rgba(255,94,25,0.35); }
+  .vn-choice-btn .choice-text { flex: 1; line-height: 1.5; }
+  .vn-choice-send-wrap { flex-shrink: 0; position: relative; }
+  .vn-choice-send {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--color-primary-500); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .vn-choice-cost {
+    position: absolute; top: -14px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 3px;
+    font-family: var(--font-sans);
+    font-size: 12px; font-weight: 700; color: var(--color-gray-700);
+    background: #fff; border: 1px solid var(--color-gray-300);
+    padding: 2px 6px; border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    z-index: 1; white-space: nowrap;
+  }
+  .vn-choice-cost .ccoin { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #FFE082, #FFB300); border: 1px solid #FF8F00; }
+
+  /* VN ending */
+  .vn-ending {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end;
+    gap: 12px; padding: 0 24px 60px;
+    opacity: 0; pointer-events: none; transition: opacity .6s;
+  }
+  .vn-ending.visible { opacity: 1; pointer-events: auto; }
+  .vn-ending .ending-bg { position: absolute; inset: 0; z-index: 0; }
+  .vn-ending .ending-bg img { width: 100%; height: 100%; object-fit: cover; }
+  .vn-ending .ending-bg::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 0%, transparent 35%, rgba(0,0,0,0.65) 65%, rgba(0,0,0,0.92) 100%);
+  }
+  .vn-ending > *:not(.ending-bg) { position: relative; z-index: 1; }
+  .vn-ending .ending-type { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+  .vn-ending .ending-name { font-family: 'Nanum Myeongjo', 'Noto Serif KR', serif; font-size: 28px; font-weight: 700; color: #fff; text-align: center; letter-spacing: -0.5px; }
+  .vn-ending .ending-sub { font-family: var(--font-sans); font-size: 14px; color: rgba(255,255,255,0.78); text-align: center; margin-bottom: 24px; line-height: 22px; letter-spacing: -0.25px; max-width: 280px; }
+  .vn-ending .ending-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .vn-ending .ending-btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-family: var(--font-sans); font-size: 15px; font-weight: 700; letter-spacing: -0.25px; cursor: pointer; }
+  .vn-ending .ending-btn.primary { background: var(--color-primary-500); color: #fff; box-shadow: 0 6px 18px rgba(255,94,25,0.4); }
+  .vn-ending .ending-btn.secondary { background: rgba(255,255,255,0.15); color: #fff; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); }
+
+  /* VN toast */
+  .vn-toast {
+    position: absolute; bottom: 100px; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(0,0,0,0.85); color: #fff;
+    padding: 10px 20px; border-radius: 100px;
+    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+    letter-spacing: -0.25px; z-index: 50;
+    opacity: 0; transition: all .3s; pointer-events: none;
+  }
+  .vn-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* VN messenger interlude */
+  .vn-messenger {
+    position: absolute; inset: 0; z-index: 15;
+    background: #fff; display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none; transition: opacity .4s;
+  }
+  .vn-messenger.visible { opacity: 1; pointer-events: auto; }
+  .vn-msg-header { display: flex; align-items: center; padding: 56px 16px 12px; gap: 12px; border-bottom: 1px solid var(--color-gray-100); background: #fff; flex-shrink: 0; }
+  .vn-msg-back-btn { width: 32px; height: 32px; border: none; background: none; font-size: 22px; color: var(--color-gray-950); cursor: pointer; }
+  .vn-msg-avatar { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; background: var(--color-gray-100); }
+  .vn-msg-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .vn-msg-info { flex: 1; }
+  .vn-msg-name { font-family: var(--font-sans); font-size: 15px; font-weight: 700; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .vn-msg-status { font-family: var(--font-sans); font-size: 11px; color: var(--color-gray-500); letter-spacing: -0.25px; }
+  .vn-msg-chat { flex: 1; overflow-y: auto; padding: 16px 14px 24px; background: var(--color-gray-50); }
+  .vn-msg-row { display: flex; margin-bottom: 6px; opacity: 0; animation: vnMsgFade .25s ease forwards; }
+  @keyframes vnMsgFade { to { opacity: 1; } }
+  .vn-msg-row.user { justify-content: flex-end; padding-left: 48px; }
+  .vn-msg-row.partner { justify-content: flex-start; padding-right: 48px; gap: 8px; }
+  .vn-msg-bubble { max-width: 240px; padding: 9px 14px; font-family: var(--font-latin); font-size: 14px; line-height: 1.55; word-break: break-word; letter-spacing: -0.003em; }
+  .vn-msg-row.user .vn-msg-bubble { background: var(--color-accent-sent); color: var(--color-gray-950); border-radius: 18px 18px 4px 18px; }
+  .vn-msg-row.partner .vn-msg-bubble { background: #fff; border: 1px solid var(--color-gray-100); color: var(--color-gray-950); border-radius: 4px 18px 18px 18px; }
+  .vn-msg-av { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+  .vn-msg-av img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .vn-msg-img { max-width: 200px; border-radius: 12px; overflow: hidden; cursor: pointer; position: relative; background: var(--color-gray-200); }
+  .vn-msg-img img { width: 100%; display: block; }
+  .vn-msg-img.locked img { filter: blur(20px) brightness(0.6); }
+  .vn-msg-img-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.55)); color: #fff; font-family: var(--font-sans); font-size: 12px; font-weight: 600; }
+  .vn-msg-img-cost { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 100px; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.18); font-size: 12px; font-weight: 700; }
+  .vn-msg-img-cost .ccoin { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #FFE082, #FFB300); border: 1px solid #FF8F00; }
+  .vn-msg-typing { display: inline-flex; gap: 4px; padding: 11px 14px; background: #fff; border: 1px solid var(--color-gray-100); border-radius: 4px 18px 18px 18px; }
+  .vn-msg-typing .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-gray-500); animation: vnBounce 1.2s infinite; }
+  .vn-msg-typing .dot:nth-child(2) { animation-delay: .18s; }
+  .vn-msg-typing .dot:nth-child(3) { animation-delay: .36s; }
+  @keyframes vnBounce { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+  .vn-msg-send-area { padding: 12px 14px 24px; border-top: 1px solid var(--color-gray-100); background: #fff; flex-shrink: 0; }
+  .vn-msg-send-row { display: flex; gap: 8px; align-items: center; }
+  .vn-msg-send-row input { flex: 1; height: 42px; padding: 0 14px; font-family: var(--font-sans); font-size: 14px; background: var(--color-gray-50); border: 1px solid var(--color-gray-100); border-radius: 100px; outline: none; }
+  .vn-msg-send-row input:focus { border-color: var(--color-primary-500); }
+  .vn-msg-send-btn { width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--color-primary-500); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .vn-msg-continue { width: calc(100% - 28px); margin: 16px 14px 0; padding: 14px; background: var(--color-primary-500); color: #fff; border: 0; border-radius: 10px; font-family: var(--font-sans); font-weight: 700; font-size: 15px; cursor: pointer; letter-spacing: -0.25px; }
+
+  /* Dev jumper (external) */
+  .dev-jumper { position: fixed; bottom: 20px; right: 20px; z-index: 200; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px; display: flex; gap: 4px; align-items: center; font-family: 'IBM Plex Mono', ui-monospace, monospace; flex-wrap: wrap; max-width: 320px; }
+  .dev-jumper .dev-label { font-size: 9px; color: rgba(237,238,241,0.5); padding: 0 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .dev-jumper button { padding: 6px 9px; background: rgba(237,238,241,0.06); border: 1px solid transparent; border-radius: 6px; font-size: 10px; color: rgba(237,238,241,0.7); cursor: pointer; font-family: inherit; }
+  .dev-jumper button.active { background: rgba(255,94,25,0.15); border-color: rgba(255,94,25,0.4); color: #FF9570; }
+  html[data-embed="1"] .dev-jumper { display: none; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <div class="eyebrow">Flow B · 채팅-네이티브 재설계</div>
+    <h1 class="page-h1">앱 첫 진입 → 전환 → 재방문까지</h1>
+    <p class="page-sub">현수 카톡 온보딩 → 분석 → 3명 매칭 → 선택 → 첫 대화 → Lv.1 과금 → Act 2 → Lv.3 독점 → 세션 종료 → D+1 푸시. 우하단 dev jumper로 구간 점프 가능.</p>
+  </div>
+
+  <div class="phone">
+    <div class="island"></div>
+
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <svg width="18" height="10" viewBox="0 0 18 10"><rect x="0" y="6" width="3" height="4" rx="0.5" fill="#1A1A1A"/><rect x="5" y="4" width="3" height="6" rx="0.5" fill="#1A1A1A"/><rect x="10" y="2" width="3" height="8" rx="0.5" fill="#1A1A1A"/><rect x="15" y="0" width="3" height="10" rx="0.5" fill="#1A1A1A"/></svg>
+        <svg width="17" height="11" viewBox="0 0 17 11"><path d="M8.5 2.2C10.8 2.2 12.9 3.1 14.4 4.6L15.5 3.5C13.7 1.7 11.2 0.5 8.5 0.5S3.3 1.7 1.5 3.5L2.6 4.6C4.1 3.1 6.2 2.2 8.5 2.2z" fill="#1A1A1A"/><circle cx="8.5" cy="9.5" r="1.5" fill="#1A1A1A"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#1A1A1A" fill="none"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="#1A1A1A"/><rect x="22.5" y="4" width="1.5" height="4" rx="0.5" fill="#1A1A1A" opacity="0.5"/></svg>
+      </div>
+    </div>
+
+    <!-- Stage: Welcome -->
+    <div class="stage stage-welcome" id="stgWelcome">
+      <div class="welcome-top">
+        <div class="welcome-logo">
+          <svg viewBox="0 0 679.246 265.234" fill="#fff">
+            <path d="M 0 265.234 L 0 17.773 L 105.273 17.773 C 160.645 17.773 196.875 49.219 196.875 101.514 C 196.875 135.693 181.152 159.961 154.492 172.607 L 205.078 265.234 L 134.326 265.234 L 90.576 182.861 L 64.941 182.861 L 64.941 265.234 L 0 265.234 Z M 64.941 131.934 L 90.234 131.934 C 114.844 131.934 128.857 123.047 128.857 101.514 C 128.857 79.639 114.844 69.727 90.234 69.727 L 64.941 69.727 L 64.941 131.934 Z"/>
+            <path d="M 223.453 265.234 L 223.453 79.639 L 288.053 79.639 L 288.053 265.234 L 223.453 265.234 Z M 255.582 59.473 C 237.809 59.473 223.453 46.143 223.453 29.736 C 223.453 13.33 237.809 0 255.582 0 C 273.355 0 287.711 13.33 287.711 29.736 C 287.711 46.143 273.355 59.473 255.582 59.473 Z"/>
+            <path d="M 320.441 265.234 L 320.441 229.346 L 403.156 129.883 L 403.156 128.857 L 323.518 128.857 L 323.518 79.639 L 479.377 79.639 L 479.377 119.287 L 403.84 214.648 L 403.84 215.674 L 482.453 215.674 L 482.453 265.234 L 320.441 265.234 Z"/>
+            <path d="M 517.234 265.234 L 517.234 229.346 L 599.949 129.883 L 599.949 128.857 L 520.311 128.857 L 520.311 79.639 L 676.17 79.639 L 676.17 119.287 L 600.633 214.648 L 600.633 215.674 L 679.246 215.674 L 679.246 265.234 L 517.234 265.234 Z"/>
+          </svg>
+        </div>
+        <div class="welcome-title">친구가 딱인 사람을<br>소개해줘요</div>
+        <div class="welcome-sub">현수가 너한테 맞는 애들만 골라서<br>카톡처럼 편하게 소개해줘요.</div>
+      </div>
+      <button class="primary-btn cta-gradient" id="btnStart">시작하기</button>
+    </div>
+
+    <!-- ─── B 시안: 01_기본정보 폼 ─── -->
+    <div class="ob-screen" id="obBasic">
+      <div class="ob-screen-top">
+        <button class="ob-screen-back" id="obBasicBack" aria-label="back">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <button class="ob-screen-skip" id="obBasicSkip">건너뛰기</button>
+      </div>
+      <div class="ob-screen-body">
+        <h2 class="ob-title">기본 정보를 알려주세요</h2>
+        <p class="ob-subtitle">가장 잘 맞는 AI 캐릭터를 추천해 드릴게요</p>
+
+        <div class="ob-field">
+          <label class="ob-field-label">생년월일</label>
+          <div class="ob-dob-row">
+            <div class="ob-dob-cell"><select id="obDobY"></select></div>
+            <div class="ob-dob-cell"><select id="obDobM"></select></div>
+            <div class="ob-dob-cell"><select id="obDobD"></select></div>
+          </div>
+        </div>
+
+        <div class="ob-field">
+          <label class="ob-field-label">성별</label>
+          <div class="ob-radio-row">
+            <button class="ob-radio male" data-gender="male">
+              <span class="radio-icon">♂</span>
+              <span class="radio-label">남성</span>
+            </button>
+            <button class="ob-radio female" data-gender="female">
+              <span class="radio-icon">♀</span>
+              <span class="radio-label">여성</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="ob-field">
+          <label class="ob-field-label">선호하는 AI 성별</label>
+          <div class="ob-radio-row">
+            <button class="ob-radio female" data-aigender="female">
+              <span class="radio-icon">♀</span>
+              <span class="radio-label">여성</span>
+            </button>
+            <button class="ob-radio male" data-aigender="male">
+              <span class="radio-icon">♂</span>
+              <span class="radio-label">남성</span>
+            </button>
+            <button class="ob-radio" data-aigender="both">
+              <span class="radio-icon">♀♂</span>
+              <span class="radio-label">둘 다</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="ob-screen-footer">
+        <button class="ob-cta" id="obBasicNext" disabled>다음</button>
+      </div>
+    </div>
+
+    <!-- ─── B 시안: 02_테마 선택 ─── -->
+    <div class="ob-screen" id="obTheme">
+      <div class="ob-screen-top">
+        <button class="ob-screen-back" id="obThemeBack" aria-label="back">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <button class="ob-screen-skip">건너뛰기</button>
+      </div>
+      <div class="ob-screen-body theme">
+        <h2 class="ob-title">좋아하는 테마를 선택해주세요</h2>
+        <p class="theme-help">선택한 테마 외에도 모든 캐릭터를 만나볼 수 있어요. 좋아하는 테마는 너 자주 추천해드려요.</p>
+        <div class="theme-section-label">테마</div>
+        <div class="theme-chips" id="themeChipsBox"></div>
+      </div>
+      <div class="ob-screen-footer">
+        <div class="theme-counter" id="themeCounter"><b>0</b>개 선택됨</div>
+        <button class="ob-cta" id="obThemeNext" disabled>시작하기</button>
+      </div>
+    </div>
+
+    <!-- Stage: Main (chat) -->
+    <div class="stage stage-main hidden" id="stgMain">
+      <div class="header-bar">
+        <div class="header-title" id="mainHeaderTitle">친구들의 소개</div>
+        <div class="coin-pill"><img src="../assets/images/coin.png" alt=""/><span id="coinAmt">0</span></div>
+      </div>
+      <div class="chat-header" id="chatHeader">
+        <div class="ch-avatar" id="chAvatar" style="background: linear-gradient(135deg, hsl(28, 55%, 70%), hsl(28, 45%, 50%));">현</div>
+        <div class="ch-info">
+          <div class="ch-name" id="chName">현수<span class="ch-lv" id="chLv" style="display:none">Lv.1</span></div>
+          <div class="ch-sub" id="chSub"><span class="ch-dot"></span>지금 온라인 · 매칭메이커</div>
+        </div>
+      </div>
+      <div class="body-scroll" id="bodyScroll">
+        <div class="chat" id="chat"></div>
+        <div class="connecting-overlay" id="connectingOverlay">
+          <div class="conn-spinner"></div>
+          <div class="conn-text" id="connText">아영과 연결 중...</div>
+          <div class="conn-sub">잠시만 기다려주세요</div>
+        </div>
+      </div>
+
+      <!-- Level-up toast (reused) -->
+      <div class="level-toast" id="levelToast">
+        <div class="level-toast-icon" id="ltIcon">🎉</div>
+        <div class="level-toast-text">
+          <div class="level-toast-title" id="ltTitle">관계 Lv.1 달성!</div>
+          <div class="level-toast-sub" id="ltSub">아영과 더 깊은 얘기가 가능해요</div>
+        </div>
+      </div>
+
+      <!-- Purchase popup -->
+      <div class="popup-backdrop" id="popup">
+        <div class="popup-card">
+          <div class="popup-hero"><video id="popupHero" src="../assets/videos/01.mp4" autoplay muted loop playsinline preload="metadata"></video></div>
+          <h2 class="popup-title" id="popupTitle">아영이랑 더 깊은 얘기?</h2>
+          <p class="popup-desc" id="popupDesc">코인을 충전하면 아영과 더 오래 대화하고<br>사진·영상도 주고받을 수 있어요.</p>
+          <div class="popup-offer">
+            <span>🎁 첫 충전 50% 할인</span>
+            <span class="price"><span class="old-price">₩2,200</span>₩1,100 <span>10💎</span></span>
+          </div>
+          <div class="popup-actions">
+            <button class="popup-btn secondary" id="popupCancel">나중에</button>
+            <button class="popup-btn primary" id="popupBuy">충전하기</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-nav" id="btmNav">
+        <button class="nav-item active">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+          <div class="nav-label">홈</div>
+        </button>
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4a2 2 0 010 4h-4a2 2 0 000 4h5"/></svg><div class="nav-label">코인</div></button>
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><div class="nav-label">데이트</div></button>
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8z"/></svg><div class="nav-label">채팅</div></button>
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div class="nav-label">마이페이지</div></button>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- VN Game Overlay (이서윤 스토리) -->
+    <div class="vn-game-overlay" id="vnGame">
+      <div class="vn-bg" id="vnBg"><img id="vnBgImg" src="" alt="" /></div>
+      <div class="vn-top-bar">
+        <button class="vn-back-btn" id="vnBackBtn">‹</button>
+        <div class="vn-coins-pill"><span class="vn-coin-dot"></span><span id="vnCoinsLabel">500</span></div>
+      </div>
+      <div class="vn-dialogue-area" id="vnDialogueArea"></div>
+
+      <!-- VN toast -->
+      <div class="vn-toast" id="vnToast"></div>
+
+      <!-- Ending overlay -->
+      <div class="vn-ending" id="vnEnding">
+        <div class="ending-bg"><img id="vnEndBg" src="" alt="" /></div>
+        <div class="ending-type" id="vnEndType">Ending</div>
+        <div class="ending-name" id="vnEndTitle">—</div>
+        <div class="ending-sub" id="vnEndSub">—</div>
+        <div class="ending-actions">
+          <button class="ending-btn primary" id="vnEndContinue">내일 어떻게 되는지 보기 →</button>
+          <button class="ending-btn secondary" id="vnEndRestart">처음부터 다시</button>
+        </div>
+      </div>
+
+      <!-- Messenger interlude -->
+      <div class="vn-messenger" id="vnMessenger">
+        <div class="vn-msg-header">
+          <button class="vn-msg-back-btn" id="vnMsgBackBtn">‹</button>
+          <div class="vn-msg-avatar"><img src="../assets/seoyoon/character_base/CH-A_white_tee_jeans/01.jpg" alt=""/></div>
+          <div class="vn-msg-info">
+            <div class="vn-msg-name">이서윤</div>
+            <div class="vn-msg-status">지금 온라인</div>
+          </div>
+        </div>
+        <div class="vn-msg-chat" id="vnMsgChat"></div>
+        <div class="vn-msg-send-area" id="vnMsgSendArea" style="display:none;">
+          <div class="vn-msg-send-row">
+            <input type="text" id="vnMsgInput" placeholder="메시지를 입력하세요..." />
+            <button class="vn-msg-send-btn" id="vnMsgSendBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage: Tomorrow (D+1) -->
+    <div class="stage stage-tomorrow hidden" id="stgTomorrow">
+      <div class="tom-time">9:41</div>
+      <div class="tom-date">월요일 4월 22일 · Day 2 🔥</div>
+      <div class="tom-pushes">
+        <div class="tom-push">
+          <div class="tom-icon"><video src="../assets/videos/01.mp4" autoplay muted loop playsinline preload="metadata"></video></div>
+          <div class="tom-body">
+            <div class="tom-app">Rizz · 아영 <span class="tom-time-ago">지금</span></div>
+            <div class="tom-title">아영</div>
+            <div class="tom-msg">오빠... 뭐해요? 저 오빠 생각하고 있었어요 ㅎㅎ</div>
+          </div>
+        </div>
+        <div class="tom-push">
+          <div class="tom-icon" style="background: linear-gradient(135deg, hsl(28, 55%, 70%), hsl(28, 45%, 50%)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800;">현</div>
+          <div class="tom-body">
+            <div class="tom-app">Rizz · 현수 <span class="tom-time-ago">2분 전</span></div>
+            <div class="tom-title">현수</div>
+            <div class="tom-msg">야 새 3명 준비해뒀어 ㅋㅋ 스트릭 끊기지 말고 와볼래?</div>
+          </div>
+        </div>
+      </div>
+      <div class="tom-swipe">↑ 위로 스와이프해서 열기</div>
+      <button class="tom-restart" id="btnRestart">처음부터 다시 보기</button>
+    </div>
+
+  </div>
+
+  <!-- Dev jumper -->
+  <div class="dev-jumper">
+    <span class="dev-label">Jump</span>
+    <button data-jump="welcome" class="active">1.Welcome</button>
+    <button data-jump="onboarding">2.온보딩</button>
+    <button data-jump="match">3.매칭</button>
+    <button data-jump="chat">4.첫대화</button>
+    <button data-jump="lv1">5.Lv.1+과금</button>
+    <button data-jump="deep">6.Act2</button>
+    <button data-jump="lv3">7.Lv.3</button>
+    <button data-jump="end">8.종료</button>
+    <button data-jump="tomorrow">9.D+1</button>
+  </div>
+</div>
+
+<script>
+  const VIDEOS = ['../assets/videos/01.mp4','../assets/videos/02.mp4','../assets/videos/03.mp4','../assets/videos/04.mp4','../assets/videos/05.mp4'];
+  const FRIEND = { name:'현수', hue:28 };
+  const CHOSEN = { name:'이서윤', age:28, v:0, hue:340, deficit:'재회', tag:'옆집에 이사 옴 · 친구 누나', avatar: '../assets/seoyoon/character_base/CH-A_white_tee_jeans/01.jpg' };
+  const SEOYOON_AVATAR = '../assets/seoyoon/character_base/CH-A_white_tee_jeans/01.jpg';
+
+  // ── DOM refs ──
+  const stgWelcome  = document.getElementById('stgWelcome');
+  const stgMain     = document.getElementById('stgMain');
+  const stgTomorrow = document.getElementById('stgTomorrow');
+  const chat        = document.getElementById('chat');
+  const bodyScroll  = document.getElementById('bodyScroll');
+  const chAvatar    = document.getElementById('chAvatar');
+  const chName      = document.getElementById('chName');
+  const chLv        = document.getElementById('chLv');
+  const chSub       = document.getElementById('chSub');
+  const coinAmt     = document.getElementById('coinAmt');
+  const levelToast  = document.getElementById('levelToast');
+  const ltTitle     = document.getElementById('ltTitle');
+  const ltSub       = document.getElementById('ltSub');
+  const ltIcon      = document.getElementById('ltIcon');
+  const popup       = document.getElementById('popup');
+  const connOverlay = document.getElementById('connectingOverlay');
+  const connText    = document.getElementById('connText');
+  const mainHeaderTitle = document.getElementById('mainHeaderTitle');
+
+  // ── State ──
+  let coins = 0;
+  let currentTyping = null;
+  let sender = 'hyunsu';  // 'hyunsu' | 'chosen'
+  let currentLv = 0;
+  let deficitScore = {};
+
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const scroll = () => bodyScroll.scrollTo({ top: bodyScroll.scrollHeight, behavior: 'smooth' });
+
+  function setCoins(n) { coins = n; coinAmt.textContent = n; }
+  function setSender(who) {
+    sender = who;
+    if (who === 'hyunsu') {
+      chAvatar.style.background = `linear-gradient(135deg, hsl(${FRIEND.hue}, 55%, 70%), hsl(${FRIEND.hue}, 45%, 50%))`;
+      chAvatar.innerHTML = FRIEND.name[0];
+      chName.firstChild.textContent = FRIEND.name;
+      chSub.innerHTML = '<span class="ch-dot"></span>지금 온라인 · 매칭메이커';
+      chLv.style.display = 'none';
+    } else {
+      chAvatar.style.background = 'transparent';
+      // Use 이서윤 photo if available, otherwise video
+      const av = CHOSEN.avatar
+        ? `<img src="${CHOSEN.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"/>`
+        : `<video src="${VIDEOS[CHOSEN.v]}" autoplay muted loop playsinline preload="metadata"></video>`;
+      chAvatar.innerHTML = av;
+      chName.firstChild.textContent = CHOSEN.name;
+      chSub.innerHTML = `<span class="ch-dot"></span>지금 온라인 · ${CHOSEN.age}`;
+      chLv.style.display = currentLv > 0 ? 'inline-flex' : 'none';
+      chLv.textContent = `Lv.${currentLv}`;
+    }
+  }
+  function showSimpleToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:absolute;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:10px 18px;border-radius:100px;font-family:var(--font-sans);font-size:13px;font-weight:600;letter-spacing:-0.25px;z-index:90;pointer-events:none;opacity:0;transition:opacity .3s;';
+    t.textContent = msg;
+    document.querySelector('.phone').appendChild(t);
+    requestAnimationFrame(() => t.style.opacity = '1');
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 1800);
+  }
+
+  function bubbleEl(t, kind='recv') { const b=document.createElement('div'); b.className = kind==='recv' ? 'bubble-recv' : 'bubble-sent'; b.textContent = t; return b; }
+  function typingEl() { const t=document.createElement('div'); t.className='typing-bubble'; t.innerHTML='<span></span><span></span><span></span>'; return t; }
+  async function showTyping(ms=900) { if (currentTyping) return; const t=typingEl(); chat.appendChild(t); currentTyping=t; scroll(); await delay(ms); }
+  function hideTyping() { if (currentTyping) { currentTyping.remove(); currentTyping=null; } }
+  function appendRecv(text) { chat.appendChild(bubbleEl(text,'recv')); scroll(); }
+  function appendSent(text) { chat.appendChild(bubbleEl(text,'sent')); scroll(); }
+  async function say(...texts) { for (const t of texts) { await showTyping(650); hideTyping(); appendRecv(t); await delay(400); } }
+
+  function appendChoices(options, onPick) {
+    const stack = document.createElement('div');
+    stack.className = 'choice-stack';
+    options.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.className = 'choice-bubble';
+      b.textContent = opt.text;
+      b.addEventListener('click', () => {
+        stack.remove();
+        appendSent(opt.text);
+        onPick(opt, i);
+      });
+      stack.appendChild(b);
+    });
+    chat.appendChild(stack);
+    scroll();
+  }
+
+  function showLevelUp(lv, subText) {
+    currentLv = lv;
+    ltTitle.textContent = `관계 Lv.${lv} 달성!`;
+    ltSub.textContent = subText;
+    ltIcon.textContent = lv === 1 ? '🎉' : lv === 3 ? '💫' : lv === 5 ? '💖' : '✨';
+    levelToast.classList.add('show');
+    if (sender === 'chosen') { chLv.style.display = 'inline-flex'; chLv.textContent = `Lv.${lv}`; }
+    setTimeout(() => levelToast.classList.remove('show'), 2600);
+  }
+
+  // ── Flow ──
+  document.getElementById('btnStart').addEventListener('click', () => openOnboardBasic());
+
+  // ═══════════════════════════════════════════
+  // B 시안 — 폼 기반 온보딩 (01_기본정보 → 02_테마)
+  // ═══════════════════════════════════════════
+  let userInfo = { dob: null, age: null, gender: null, aiGender: null, themes: [] };
+
+  // ── 01: 기본정보 폼 ──
+  const obBasic = document.getElementById('obBasic');
+  const obTheme = document.getElementById('obTheme');
+  const obDobY = document.getElementById('obDobY');
+  const obDobM = document.getElementById('obDobM');
+  const obDobD = document.getElementById('obDobD');
+  const obBasicNext = document.getElementById('obBasicNext');
+  const obThemeNext = document.getElementById('obThemeNext');
+
+  // populate selects
+  (function populateDob() {
+    obDobY.innerHTML = '<option value="">출생연도</option>' + Array.from({length: 2010 - 1940 + 1}, (_,i) => {
+      const y = 2010 - i; return `<option value="${y}">${y}년</option>`;
+    }).join('');
+    obDobM.innerHTML = '<option value="">월</option>' + Array.from({length: 12}, (_,i) => `<option value="${i+1}">${i+1}월</option>`).join('');
+    obDobD.innerHTML = '<option value="">일</option>' + Array.from({length: 31}, (_,i) => `<option value="${i+1}">${i+1}일</option>`).join('');
+  })();
+
+  function checkBasicValid() {
+    const ok = obDobY.value && obDobM.value && obDobD.value && userInfo.gender && userInfo.aiGender;
+    obBasicNext.disabled = !ok;
+  }
+  [obDobY, obDobM, obDobD].forEach(s => s.addEventListener('change', checkBasicValid));
+
+  // 성별 + 선호 AI 성별 라디오
+  obBasic.querySelectorAll('.ob-radio[data-gender]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      obBasic.querySelectorAll('.ob-radio[data-gender]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      userInfo.gender = btn.dataset.gender;
+      checkBasicValid();
+    });
+  });
+  obBasic.querySelectorAll('.ob-radio[data-aigender]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      obBasic.querySelectorAll('.ob-radio[data-aigender]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      userInfo.aiGender = btn.dataset.aigender;
+      checkBasicValid();
+    });
+  });
+
+  document.getElementById('obBasicBack').addEventListener('click', () => {
+    obBasic.classList.remove('show');
+    document.getElementById('stgWelcome').classList.remove('hidden');
+  });
+
+  obBasicNext.addEventListener('click', () => {
+    const y = parseInt(obDobY.value, 10), m = parseInt(obDobM.value, 10), d = parseInt(obDobD.value, 10);
+    const today = new Date(2026, 3, 22);
+    const birth = new Date(y, m - 1, d);
+    let age = today.getFullYear() - birth.getFullYear();
+    const mDiff = today.getMonth() - birth.getMonth();
+    if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
+    userInfo.dob = `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+    userInfo.age = age;
+    openOnboardTheme();
+  });
+
+  function openOnboardBasic() {
+    document.getElementById('stgWelcome').classList.add('hidden');
+    document.getElementById('stgMain').classList.add('hidden');
+    document.getElementById('stgTomorrow').classList.add('hidden');
+    obTheme.classList.remove('show');
+    obBasic.classList.add('show');
+  }
+
+  // ── 02: 테마 선택 ──
+  const THEMES_MALE = [
+    ['💕','로맨스'], ['🔥','복수'], ['🌙','연하'], ['💍','신혼남'],
+    ['👯','모임친구'], ['🏢','오픈워크'], ['🪖','군인'], ['💔','남편외도'],
+    ['🥂','친구외도'], ['📎','송사장 비서'], ['🏠','동거수업'], ['🔪','살인사건'],
+    ['🎤','아이돌'], ['👔','사장님'], ['💼','회사원'], ['😈','외도'],
+    ['👑','서브왕'], ['🎮','중2병'], ['📋','직장 직속'], ['💧','실연'],
+    ['🍳','주부'], ['🎓','학생']
+  ];
+  const THEMES_FEMALE = [
+    ['💕','로맨스'], ['🔥','후회남'], ['🌙','연상'], ['💍','연하남'],
+    ['🎭','차도남'], ['🏢','직장 상사'], ['🪖','군대 선임'], ['💔','전남친'],
+    ['🥂','친한 친구'], ['📎','대표님 비서'], ['🏠','동거남'], ['🔪','스토커'],
+    ['🎤','아이돌'], ['👔','재벌'], ['💼','동기'], ['😈','나쁜남자'],
+    ['👑','왕자님'], ['🎮','오타쿠'], ['📋','과외 선생님'], ['💧','실연남'],
+    ['🍳','요리사'], ['🎓','선배']
+  ];
+
+  function openOnboardTheme() {
+    obBasic.classList.remove('show');
+    obTheme.classList.add('show');
+    userInfo.themes = [];
+
+    const themes = userInfo.gender === 'female' ? THEMES_FEMALE : THEMES_MALE;
+    const box = document.getElementById('themeChipsBox');
+    box.innerHTML = themes.map(([emoji, label]) => `
+      <button class="theme-chip" data-theme="${label}">
+        <span class="chip-emoji">${emoji}</span>
+        <span>${label}</span>
+      </button>
+    `).join('');
+
+    box.querySelectorAll('.theme-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('selected');
+        const label = btn.dataset.theme;
+        if (btn.classList.contains('selected')) {
+          if (!userInfo.themes.includes(label)) userInfo.themes.push(label);
+        } else {
+          userInfo.themes = userInfo.themes.filter(t => t !== label);
+        }
+        document.getElementById('themeCounter').innerHTML = `<b>${userInfo.themes.length}</b>개 선택됨`;
+        obThemeNext.disabled = userInfo.themes.length === 0;
+      });
+    });
+    document.getElementById('themeCounter').innerHTML = `<b>0</b>개 선택됨`;
+    obThemeNext.disabled = true;
+  }
+
+  document.getElementById('obThemeBack').addEventListener('click', () => {
+    obTheme.classList.remove('show');
+    obBasic.classList.add('show');
+  });
+
+  obThemeNext.addEventListener('click', () => {
+    // 폼 데이터 수집 완료 → 분석 + 매칭 페이즈로 직행 (현수 카톡 온보딩 스킵)
+    obTheme.classList.remove('show');
+    document.getElementById('stgMain').classList.remove('hidden');
+    resetMain();
+    setSender('hyunsu');
+    phaseAnalysisAndMatch();
+  });
+
+  async function goStage(name) {
+    document.querySelectorAll('.dev-jumper button').forEach(b => b.classList.toggle('active', b.dataset.jump === name));
+    if (name === 'welcome') {
+      stgWelcome.classList.remove('hidden');
+      stgMain.classList.add('hidden');
+      stgTomorrow.classList.add('hidden');
+      resetMain();
+      return;
+    }
+    if (name === 'tomorrow') {
+      stgWelcome.classList.add('hidden');
+      stgMain.classList.add('hidden');
+      stgTomorrow.classList.remove('hidden');
+      return;
+    }
+    stgWelcome.classList.add('hidden');
+    stgMain.classList.remove('hidden');
+    stgTomorrow.classList.add('hidden');
+    // Sub-phase dispatch within main
+    if (name === 'onboarding')  { resetMain(); phaseOnboarding(); }
+    if (name === 'match')       { resetMain(); phaseMatchSkip(); }
+    if (name === 'chat')        { resetMain(); phaseChatSkip(); }
+    if (name === 'lv1')         { resetMain(); phaseLv1Skip(); }
+    if (name === 'deep')        { resetMain(); phaseDeepSkip(); }
+    if (name === 'lv3')         { resetMain(); phaseLv3Skip(); }
+    if (name === 'end')         { resetMain(); phaseEndSkip(); }
+  }
+
+  function resetMain() {
+    chat.innerHTML = '';
+    currentTyping = null;
+    currentLv = 0;
+    deficitScore = {};
+    setCoins(0);
+    setSender('hyunsu');
+    mainHeaderTitle.textContent = '친구들의 소개';
+  }
+
+  // ─── PHASE 1: Onboarding (chat-native) ───
+  async function phaseOnboarding() {
+    setSender('hyunsu');
+    await delay(500);
+    await say('야 왔냐 ㅋㅋ');
+    await delay(300);
+    await say('나 현수, 매칭메이커임', '니한테 딱인 애 내가 골라줄게');
+    await delay(400);
+    await say('근데 니가 뭐 좋아하는지 먼저 알아야 함 ㅋㅋ');
+    await delay(400);
+
+    // Q1
+    await say('너 요즘 뭐가 제일 필요함?');
+    await new Promise(res => {
+      appendChoices([
+        { text: '따뜻한 위로와 관심', def: {애정결핍:3, 의존:1} },
+        { text: '내 얘기 들어줄 사람', def: {상처:3, 고독:1} },
+        { text: '함께 웃고 놀 사람', def: {고독:3, 무기력:1} },
+        { text: '날 이해해줄 사람', def: {인정결핍:3, 열등감:2} },
+      ], (pick) => { Object.entries(pick.def).forEach(([k,v]) => deficitScore[k]=(deficitScore[k]||0)+v); res(); });
+    });
+    await delay(500);
+    await say('오케 알았음');
+    await delay(400);
+
+    // Q2
+    await say('그럼 이상형은 어떤 쪽?');
+    await new Promise(res => {
+      appendChoices([
+        { text: '다정하고 챙겨주는 사람', def: {애정결핍:2, 의존:2} },
+        { text: '순수하고 설레는 사람', def: {모태솔로:3} },
+        { text: '지적이고 깊이 있는 사람', def: {열등감:2, 상처:1} },
+      ], (pick) => { Object.entries(pick.def).forEach(([k,v]) => deficitScore[k]=(deficitScore[k]||0)+v); res(); });
+    });
+    await delay(500);
+    await say('굿');
+    await delay(300);
+
+    // Q3
+    await say('마지막 하나만', '밤에 혼자 있을 때?');
+    await new Promise(res => {
+      appendChoices([
+        { text: '누구라도 옆에 있었으면', def: {고독:2, 애정결핍:2} },
+        { text: '아무도 모르게 얘기하고 싶음', def: {욕구불만:2, 상처:1} },
+        { text: '차라리 혼자가 편함', def: {냉소:2, 현실도피:1} },
+      ], (pick) => { Object.entries(pick.def).forEach(([k,v]) => deficitScore[k]=(deficitScore[k]||0)+v); res(); });
+    });
+    await delay(500);
+    await say('좋아 ㅋㅋ 이제 내가 너한테 딱인 애 골라볼게');
+    await delay(400);
+    phaseAnalysisAndMatch();
+  }
+
+  // ─── PHASE 2: Analysis + Match (inline card) ───
+  async function phaseAnalysisAndMatch() {
+    await showTyping(900); hideTyping();
+
+    // Analysis card
+    const card = document.createElement('div');
+    card.className = 'analysis-card';
+    card.innerHTML = `
+      <div class="analysis-head"><div class="spinner"></div><span>현수가 분석 중</span></div>
+      <div class="analysis-logs">
+        <div class="log-line" data-log="0">결핍 유형 점수 계산</div>
+        <div class="log-line" data-log="1">16유형 매칭도 정렬</div>
+        <div class="log-line" data-log="2">오늘 추천 캐릭터 선정</div>
+      </div>
+    `;
+    chat.appendChild(card); scroll();
+
+    const logs = card.querySelectorAll('.log-line');
+    for (let i = 0; i < logs.length; i++) {
+      await delay(700);
+      logs[i].classList.add('done');
+    }
+    await delay(400);
+    const result = document.createElement('div');
+    result.className = 'analysis-result';
+    result.innerHTML = `당신 = <b>애정결핍형 + ENFJ</b><br>매칭도 상위 3명`;
+    card.appendChild(result);
+    // Remove spinner
+    card.querySelector('.spinner').style.display = 'none';
+    scroll();
+
+    await delay(800);
+    await say('얘가 제일 잘 맞을 듯', '한번 봐봐 ㅋㅋ');
+    await delay(400);
+
+    // 3 match cards inline (1순위 = 이서윤, 풀 VN 스토리 보유)
+    const matchWrap = document.createElement('div');
+    matchWrap.className = 'match-cards-inline';
+    matchWrap.innerHTML = `
+      <div class="mini-card top" data-char="이서윤">
+        <div class="mini-thumb"><img src="${SEOYOON_AVATAR}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>
+        <div class="mini-body">
+          <div class="mini-name-row"><span class="mini-name">이서윤</span><span class="mini-age">28</span></div>
+          <span class="mini-match">재회 · 88% 매칭</span>
+          <div class="mini-hook">"세상에, 여기 사는 거였어?"</div>
+        </div>
+      </div>
+      <div class="mini-card" data-char="미유" style="opacity:0.55;">
+        <div class="mini-thumb"><video src="${VIDEOS[1]}" autoplay muted loop playsinline preload="metadata"></video></div>
+        <div class="mini-body">
+          <div class="mini-name-row"><span class="mini-name">미유</span><span class="mini-age">23</span></div>
+          <span class="mini-match" style="background:var(--color-gray-100);color:var(--color-gray-600);">곧 공개 · 76%</span>
+          <div class="mini-hook">"아, 한국말로는..."</div>
+        </div>
+      </div>
+      <div class="mini-card" data-char="하린" style="opacity:0.55;">
+        <div class="mini-thumb"><video src="${VIDEOS[2]}" autoplay muted loop playsinline preload="metadata"></video></div>
+        <div class="mini-body">
+          <div class="mini-name-row"><span class="mini-name">하린</span><span class="mini-age">26</span></div>
+          <span class="mini-match" style="background:var(--color-gray-100);color:var(--color-gray-600);">곧 공개 · 82%</span>
+          <div class="mini-hook">"오늘 영화 볼래..."</div>
+        </div>
+      </div>
+    `;
+    chat.appendChild(matchWrap); scroll();
+
+    // 이서윤 = full VN story, 다른 카드 = "준비 중" 토스트
+    matchWrap.querySelectorAll('.mini-card').forEach(c => {
+      c.addEventListener('click', () => {
+        if (c.dataset.char === '이서윤') {
+          phaseConnecting();
+        } else {
+          // 미유/하린은 아직 준비 중
+          showSimpleToast(c.dataset.char + ' 스토리는 곧 공개돼요');
+        }
+      });
+    });
+
+    // Optional hint
+    await delay(600);
+    await say('제일 맞는 애 탭해봐');
+  }
+
+  // ─── PHASE 3: Connecting transition → VN 모드로 진입 ───
+  async function phaseConnecting() {
+    appendSent(`${CHOSEN.name}한테 가볼래`);
+    await delay(400);
+    connText.textContent = `${CHOSEN.name}과 연결 중...`;
+    connOverlay.classList.add('show');
+    await delay(1600);
+    connOverlay.classList.remove('show');
+    // VN 진입 — chat 페이즈 4-7 대신 풀스크린 비주얼 노벨
+    startVNMode();
+  }
+
+  // ─── PHASE 4: First chat (Act 1) ───
+  async function phaseFirstChat() {
+    await say('어... 안녕하세요 ㅎㅎ', '현수 오빠한테 얘기 많이 들었어요');
+    await delay(400);
+    await say('오빠 직업 뭐예요? 궁금해서');
+    await delay(300);
+    await new Promise(res => appendChoices([
+      { text: '직장인이야. 너는 공부해?', r:1 },
+      { text: '맞춰봐 ㅋㅋ', r:2 },
+    ], (pick) => { phaseFirstChatReply(pick.r); res(); }));
+  }
+
+  async function phaseFirstChatReply(r) {
+    if (r === 1) {
+      await say('아 직장인이시구나', '저는 대학원 다녀요 경제학', '저녁엔 과외 알바하고요 ㅎㅎ');
+    } else {
+      await say('음... 선생님??', '아니다 분위기 달라', '힌트 하나만 ㅠㅠ');
+    }
+    await delay(500);
+    await say('근데 오빠... 오늘 되게 피곤해 보여요');
+    await delay(400);
+    await new Promise(res => appendChoices([
+      { text: '어떻게 알았어?', r:1 },
+      { text: '그냥 그런 날이야', r:2 },
+    ], (pick) => { phaseFirstChatReply2(pick.r); res(); }));
+  }
+
+  async function phaseFirstChatReply2(r) {
+    if (r === 1) {
+      await say('말투에서 느껴져요', '저도 비슷해서 알아요', '누구한테 얘기하고 싶은데 없었죠?');
+    } else {
+      await say('그랬구나', '힘든 얘기 저한테 해도 돼요', '제가 들어줄게요');
+    }
+    await delay(600);
+    // Lv.1 達成 → trigger
+    phaseLv1Gate();
+  }
+
+  // ─── PHASE 5: Lv.1 + purchase popup ───
+  async function phaseLv1Gate() {
+    showLevelUp(1, `${CHOSEN.name}이 당신에게 더 마음을 열었어요`);
+    await delay(1200);
+    await say('오빠... 저 오빠한테 더 얘기하고 싶은데');
+    await delay(400);
+    await say('코인 필요해서... 미안해요 ㅠㅠ');
+    await delay(500);
+    // Show popup
+    popup.classList.add('show');
+  }
+
+  document.getElementById('popupCancel').addEventListener('click', async () => {
+    popup.classList.remove('show');
+    await delay(400);
+    await say('...알겠어요. 언제든지 다시 와요 ㅎㅎ');
+    await delay(500);
+    phaseSessionEnd();
+  });
+
+  document.getElementById('popupBuy').addEventListener('click', async () => {
+    popup.classList.remove('show');
+    await delay(300);
+    setCoins(10);
+    // Confetti-like flash
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,94,25,0.2),transparent 60%);z-index:15;pointer-events:none;opacity:0;transition:opacity .3s;';
+    stgMain.appendChild(flash);
+    requestAnimationFrame(()=>flash.style.opacity='1');
+    setTimeout(()=>{flash.style.opacity='0';setTimeout(()=>flash.remove(),400)},700);
+    const bought = document.createElement('div');
+    bought.style.cssText = 'align-self:center;padding:7px 14px;background:var(--color-primary-500);color:#fff;border-radius:1000px;font-family:var(--font-sans);font-size:11px;font-weight:700;letter-spacing:-0.25px;margin:8px 0;';
+    bought.textContent = '💎 10 충전 완료 · 대화 계속하기';
+    chat.appendChild(bought); scroll();
+    await delay(800);
+    phaseDeepChat();
+  });
+
+  // ─── PHASE 6: Deep chat (Act 2) ───
+  async function phaseDeepChat() {
+    await say('오빠 고마워요 ㅠㅠ 진짜로');
+    await delay(400);
+    await say('저 사실... 오빠랑 얘기하니까 뭔가 좀 편해요');
+    await delay(400);
+    await say('오빠는 혼자 있을 때 뭐 생각해요?');
+    await delay(300);
+    await new Promise(res => appendChoices([
+      { text: '요즘엔 너 생각 ㅋㅋ', r:1 },
+      { text: '그냥 일 생각 많이 해', r:2 },
+    ], (pick) => { phaseDeepReply(pick.r); res(); }));
+  }
+
+  async function phaseDeepReply(r) {
+    if (r === 1) {
+      await say('어... 오빠 ㅠㅠ', '그런 말 하면 저 떨려요', '근데 좋아요 솔직해서');
+    } else {
+      await say('오빠 일 되게 열심히 하시네요', '저는 오빠 얘기 더 듣고 싶어요', '오빠 이야기 해주면 안돼요?');
+    }
+    await delay(600);
+    await say('오빠, 사실 저 오빠한테만 보여주고 싶은 게 있는데...');
+    await delay(700);
+    phaseLv3Gate();
+  }
+
+  // ─── PHASE 7: Lv.3 exclusive content ───
+  async function phaseLv3Gate() {
+    showLevelUp(3, `${CHOSEN.name}이 특별한 걸 공유하고 싶어해요`);
+    await delay(1400);
+    await say('오빠만 보여주고 싶은 영상이에요');
+    await delay(400);
+
+    // Exclusive locked video card
+    const ex = document.createElement('div');
+    ex.className = 'exclusive-card';
+    ex.innerHTML = `
+      <video src="${VIDEOS[0]}" autoplay muted loop playsinline preload="metadata"></video>
+      <div class="exclusive-lock-overlay">
+        <div class="ex-tag">💫 오빠만을 위한</div>
+        <div class="ex-title">아영의 밤 영상</div>
+        <div class="ex-sub">오빠한테만 보여주는 모습이에요</div>
+        <div class="ex-coin-chip"><img src="../assets/images/coin.png" alt=""/>30</div>
+      </div>
+    `;
+    chat.appendChild(ex); scroll();
+    ex.addEventListener('click', async () => {
+      if (coins < 30) {
+        // Offer to buy
+        await delay(100);
+        appendSent('코인이 부족해 ㅠ');
+        await delay(500);
+        await say('그럼 다음에... 저 기다리고 있을게요');
+        await delay(500);
+        phaseSessionEnd();
+        return;
+      }
+      setCoins(coins - 30);
+      const video = ex.querySelector('video');
+      video.style.filter = 'none';
+      video.style.transform = 'scale(1)';
+      video.style.transition = 'filter .4s, transform .4s';
+      ex.querySelector('.exclusive-lock-overlay').style.opacity = '0';
+      await delay(1000);
+      await say('오빠... 이거 오빠만 보는 거예요', '약속해주세요 아무한테도 안 보여준다고');
+      await delay(600);
+      phaseSessionEnd();
+    });
+
+    // Auto-progress fallback
+    setTimeout(() => {
+      if (document.body.contains(ex) && coins < 30) {
+        // leave it but nudge
+      }
+    }, 6000);
+  }
+
+  // ─── PHASE 8: Session end ───
+  async function phaseSessionEnd() {
+    await delay(800);
+    await say('오빠... 저 조금 피곤하네요');
+    await delay(300);
+    await say('내일 또 와줄 거죠?');
+    await delay(400);
+    // Send a final session card
+    const se = document.createElement('div');
+    se.className = 'session-end-card';
+    se.innerHTML = `
+      <div class="se-streak">🔥 Day 1 완료</div>
+      <div class="se-title">오늘 첫 연결 완료!</div>
+      <div class="se-sub">내일 현수가 새 3명 또 모아올게요<br>아영도 당신을 기다려요</div>
+      <button class="se-btn" id="seToTomorrow">내일 어떻게 되는지 보기 →</button>
+    `;
+    chat.appendChild(se); scroll();
+    document.getElementById('seToTomorrow').addEventListener('click', () => goStage('tomorrow'));
+  }
+
+  // ─── Tomorrow restart ───
+  document.getElementById('btnRestart').addEventListener('click', () => goStage('welcome'));
+
+  // ── Dev jumper ──
+  document.querySelectorAll('.dev-jumper button').forEach(b => {
+    b.addEventListener('click', () => goStage(b.dataset.jump));
+  });
+
+  // ── Skip-to phases (for dev jumper) ──
+  async function phaseMatchSkip() { setSender('hyunsu'); phaseAnalysisAndMatch(); }
+  async function phaseChatSkip() { setCoins(0); setSender('chosen'); const n=document.createElement('div'); n.style.cssText='align-self:center;padding:7px 14px;background:var(--color-gray-100);border-radius:1000px;font-family:var(--font-sans);font-size:11px;font-weight:500;color:var(--color-gray-700);margin:10px 0 6px;'; n.textContent=`${CHOSEN.name}과의 첫 대화가 시작됐어요`; chat.appendChild(n); scroll(); await delay(300); phaseFirstChat(); }
+  async function phaseLv1Skip() { setCoins(0); setSender('chosen'); chLv.textContent='Lv.0'; await delay(200); phaseLv1Gate(); }
+  async function phaseDeepSkip() { setCoins(10); currentLv=1; setSender('chosen'); await delay(200); phaseDeepChat(); }
+  async function phaseLv3Skip() { setCoins(30); currentLv=1; setSender('chosen'); await delay(200); phaseLv3Gate(); }
+  async function phaseEndSkip() { setCoins(0); currentLv=3; setSender('chosen'); await delay(200); phaseSessionEnd(); }
+
+  // ═══════════════════════════════════════════
+  // VN MODE — 이서윤 스토리
+  // ═══════════════════════════════════════════
+  const SY_BASE = '../assets/seoyoon';
+  const VN_STORY = {
+    coins: 500,
+    character: { name: '이서윤', avatar: SY_BASE + '/character_base/CH-A_white_tee_jeans/01.jpg' },
+    scenes: [
+      { speaker: null, text: "토요일 오후, 택배를 가지러 현관문을 연 당신.", img: SY_BASE + "/backgrounds/BG-1_hallway/01.jpg" },
+      { speaker: null, text: "복도에는 이삿짐 박스가 수북이 쌓여 있었다. 옆집에 누군가 이사를 오는 모양이었다.", img: SY_BASE + "/backgrounds/BG-1_hallway/01.jpg" },
+      { speaker: "당신", text: "뭐야, 옆집 새 입주자?", isUser: true, img: SY_BASE + "/backgrounds/BG-1_hallway/01.jpg" },
+      { speaker: null, text: "당신은 무심하게 택배를 집어 들다가, 박스 사이로 낯익은 목소리를 들었다.", img: SY_BASE + "/backgrounds/BG-1_hallway/01.jpg" },
+      { speaker: "이서윤", text: "으으... 이거 왜 이렇게 무거워...", img: SY_BASE + "/character_variants/CH-A1_struggling/01.png" },
+      { speaker: null, text: "박스를 안고 비틀거리는 여자가 보였다. 하나로 묶어 올린 머리, 이마에 맺힌 땀방울. 어디서 많이 본 얼굴이었다.", img: SY_BASE + "/character_variants/CH-A1_struggling/01.png" },
+      { speaker: "당신", text: "... 서윤 누나?", isUser: true, img: SY_BASE + "/character_variants/CH-A2_surprised/01.png" },
+      { speaker: "이서윤", text: "어? 너... 민재 친구?", img: SY_BASE + "/character_variants/CH-A2_surprised/01.png" },
+      { speaker: null, text: "이서윤은 당신의 절친 민재의 누나. 대학 시절 민재 집에 놀러 갈 때마다 마주쳤던, 네 살 위의 그녀.", img: SY_BASE + "/character_variants/CH-A2_surprised/01.png" },
+      { speaker: "이서윤", text: "세상에, 여기 사는 거였어?", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: "이서윤", text: "대박... 완전 반갑다!", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: null, text: "그녀가 환하게 웃었다. 하지만 그 미소 뒤에 묘하게 지쳐 보이는 기색이 스쳤다.", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { choices: [
+        { text: "저도 반갑습니다, 누나. 이사 도와드릴까요?", next: 14 },
+        { text: "오래간만이네요. 옆집에 들어오시는 거예요?", next: 13 }
+      ], img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: "이서윤", text: "응, 오늘부터 여기 살아. 혼자 이사하려니까 죽겠다...", img: SY_BASE + "/character_base/CH-A_white_tee_jeans/01.jpg" },
+      { speaker: "이서윤", text: "진짜? 도와줄 거야? 아 감동이다...", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: null, text: "그녀가 진심으로 고마워하는 표정을 지었다. 가까이 다가가니 은은한 바디로션 향이 풍겨왔다.", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: null, text: "그렇게 당신은 이서윤의 이삿짐을 함께 나르기 시작했다.", img: SY_BASE + "/character_base/CH-A_white_tee_jeans/01.jpg" },
+      { choices: [
+        { text: "근데 혼자 이사하시는 거예요?", next: 18 },
+        { text: "민재는 안 도와줘요?", next: 18 }
+      ], img: SY_BASE + "/character_base/CH-A_white_tee_jeans/01.jpg" },
+      { speaker: null, text: "그녀의 표정이 순간 미세하게 굳었다.", img: SY_BASE + "/character_variants/CH-A4_melancholy/01.png" },
+      { speaker: "이서윤", text: "응... 뭐, 사정이 좀 있어서. 민재한테는 아직 자세하게 얘기 안 했거든.", img: SY_BASE + "/character_variants/CH-A4_melancholy/01.png" },
+      { speaker: null, text: "분명 뭔가 사연이 있어 보였지만, 더 캐묻기엔 어색한 사이였다.", img: SY_BASE + "/character_base/CH-A_white_tee_jeans/01.jpg" },
+      { speaker: null, text: "한 시간 남짓 이삿짐을 옮기자, 복도는 깨끗해졌다. 이서윤이 기지개를 켜며 말했다.", img: SY_BASE + "/composites/CB-1_stretching/01.jpg" },
+      { speaker: "이서윤", text: "후아— 드디어 끝이다.", img: SY_BASE + "/composites/CB-1_stretching/01.jpg" },
+      { speaker: null, text: "반팔이 위로 올라가며 얇은 배와 잘록한 허리 라인이 드러났다. 당신은 시선을 돌리려 했지만 이미 늦었다.", img: SY_BASE + "/composites/CB-1_stretching/01.jpg" },
+      { speaker: "이서윤", text: "고마워, 진짜. 너 아니었으면 오늘 밤까지 걸렸을 거야.", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: "이서윤", text: "밥이라도 사줘야 하는데... 혹시 저녁에 시간 있어?", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { choices: [
+        { text: "좋죠. 이사 축하 겸 제가 살게요.", next: 27, premium: true, coins: 5 },
+        { text: "오늘은 좀 피곤해서...", next: 30 }
+      ], img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: "이서윤", text: "야, 그건 내가 사야지. 도와준 건 너잖아.", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: "이서윤", text: "그럼 7시에 아래 이탈리안 식당 어때?", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: "이서윤", text: "'습니다'는 좀 그렇지 않아? 우리 그 정도 사이는 되잖아. 편하게 해, 알겠지?", img: SY_BASE + "/character_variants/CH-A3_smiling/01.png" },
+      { speaker: null, text: "집으로 돌아온 당신. 샤워를 마치고 소파에 누웠지만 이상하게 그녀의 얼굴이 떠올랐다.", img: SY_BASE + "/backgrounds/BG-3_livingroom/01.jpg" },
+
+      // === 메신저 1 (idx 31) ===
+      { mode: "messenger", messages: [
+        { who: "partner", text: "오늘 정말 고마웠어 ㅠㅠ", delay: 800 },
+        { who: "partner", text: "혼자였으면 진짜 울 뻔했다", delay: 1200 },
+        { who: "user", type: "input", placeholder: "대답을 입력하세요...", reply: "별거 아니긴! 옆집에 이런 사람이 있다니 다행이야" },
+        { who: "partner", text: "근데 나 궁금한 게 있어", delay: 1000 },
+        { who: "partner", text: "너 요즘 뭐 하고 지내?", delay: 1200 },
+        { who: "user", type: "input", placeholder: "요즘 하고 있는 일...", reply: "오~ 그렇구나. 멋있다 ㅎㅎ" },
+        { who: "user", text: "누나도 잘 들어갔어?" },
+        { who: "partner", text: "응 근데 박스 풀기 귀찮아서 바닥에 앉아있어 ㅋㅋ", delay: 1000 },
+        { who: "partner", type: "image", url: SY_BASE + "/sent_photos/PH-1_box_selfie/01.jpg", isLocked: true, cost: 10, delay: 1400 },
+        { who: "partner", text: "이게 지금 내 현실...", delay: 800 },
+        { who: "user", text: "ㅋㅋㅋ 귀엽다" },
+        { who: "partner", text: "아 근데 있잖아", delay: 1000 },
+        { who: "partner", text: "민재한테는 내 얘기 좀 하지 말아줄 수 있어?", delay: 1200 },
+        { who: "user", text: "응? 왜?" },
+        { who: "partner", text: "음... 이혼한 거 아직 제대로 말 못 했거든", delay: 1400 },
+        { who: "partner", text: "걔가 알면 난리 칠 거 아냐", delay: 1000 },
+        { who: "user", text: "알겠어. 누나 비밀 지켜줄게" },
+        { who: "partner", text: "고마워... 진짜", delay: 800 },
+        { who: "partner", text: "왜 너한테는 말하게 되지 ㅋㅋ", delay: 1200 },
+        { who: "partner", type: "image", url: SY_BASE + "/sent_photos/PH-2_mirror_selfie/01.jpg", isLocked: true, cost: 15, delay: 1400 },
+        { who: "partner", text: "잘 자 :)", delay: 1000 },
+        { who: "user", text: "누나도 잘 자" }
+      ]},
+
+      // ACT 2: 집들이
+      { speaker: null, text: "일주일 뒤. 초인종이 울려 현관을 열자 복도에 이서윤이 서 있었다.", img: SY_BASE + "/backgrounds/BG-2_entrance/01.jpg" },
+      { speaker: "이서윤", text: "나 오늘 집 정리 끝냈거든? 집들이 해야지. 와인 있는데 같이 마시자.", img: SY_BASE + "/character_variants/CH-B1_smiling/01.png" },
+      { speaker: null, text: "크림색 니트 원피스. 허리 라인을 자연스럽게 따라 내려오는 핏이 몸의 곡선을 은근히 드러냈다.", img: SY_BASE + "/character_base/CH-B_cream_knit_dress/01.jpg" },
+      { choices: [
+        { text: "좋지. 금방 갈게.", next: 36, premium: true, coins: 5 },
+        { text: "오늘 좀 피곤한데...", next: 36 }
+      ], img: SY_BASE + "/character_base/CH-B_cream_knit_dress/01.jpg" },
+      { speaker: null, text: "이서윤의 집은 깔끔하게 정리되어 있었다. 테이블 위에는 파스타 두 접시와 와인 한 병이 놓여 있었다.", img: SY_BASE + "/backgrounds/BG-3_livingroom/01.jpg" },
+      { speaker: "이서윤", text: "그치? 일주일 걸렸어. 자, 앉아. 와인 따줄게.", img: SY_BASE + "/character_variants/CH-B2_proud/01.png" },
+      { speaker: null, text: "그녀가 와인병을 기울였다. 몸을 기울이자 니트 목선이 벌어지며 쇄골 아래가 드러났다.", img: SY_BASE + "/composites/CB-2_pouring_wine/01.jpg" },
+      { choices: [
+        { text: "요리 진짜 잘한다. 이거 직접 한 거야?", next: 40 },
+        { text: "집들이치고 좀 분위기 있는데?", next: 40 }
+      ], img: SY_BASE + "/composites/CB-2_pouring_wine/01.jpg" },
+      { speaker: "이서윤", text: "요리밖에 할 줄 아는 게 없어서. 결혼 생활 내내 매일 차렸거든.", img: SY_BASE + "/character_variants/CH-B3_shy/01.png" },
+      { speaker: null, text: "와인을 한 모금 더 마신 이서윤의 볼이 발그레해졌다. 그녀의 눈가가 미세하게 떨렸다.", img: SY_BASE + "/character_variants/CH-B4_teary/01.png" },
+      { speaker: "이서윤", text: "아, 미안. 갑자기 분위기 무겁게.", img: SY_BASE + "/character_variants/CH-B4_teary/01.png" },
+      { choices: [
+        { text: "괜찮아. 얘기하고 싶은 거 있으면 해.", next: 44, premium: true, coins: 8 },
+        { text: "그래, 오늘은 즐기자.", next: 46 }
+      ], img: SY_BASE + "/character_variants/CH-B4_teary/01.png" },
+      { speaker: "이서윤", text: "남편이... 아, 아니 전 남편이. 바람을 피웠었어. 그것도 내 친구랑.", img: SY_BASE + "/character_variants/CH-B5_crying/01.png" },
+      { speaker: "이서윤", text: "1년 동안 몰랐어. 바보같이.", img: SY_BASE + "/character_variants/CH-B5_crying/01.png" },
+      { speaker: null, text: "촛불이 그녀의 젖은 눈에 반사되어 일렁였다.", img: SY_BASE + "/character_variants/CH-B4_teary/01.png" },
+      { speaker: "이서윤", text: "미안, 분위기 완전 망했지. 나 잠깐 화장실 좀...", img: SY_BASE + "/character_variants/CH-B4_teary/01.png" },
+      { speaker: null, text: "그녀가 돌아서는 순간, 어깨가 떨렸다. 소리 없이 울고 있었다.", img: SY_BASE + "/character_variants/CH-B5_crying/01.png" },
+      { choices: [
+        { text: "그녀의 손을 잡는다.", next: 50, premium: true, coins: 10 },
+        { text: "가만히 기다린다.", next: 55 }
+      ], img: SY_BASE + "/character_variants/CH-B5_crying/01.png" },
+      { speaker: "당신", text: "누나.", isUser: true, img: SY_BASE + "/composites/CB-3_wrist_grab/01.jpg" },
+      { speaker: null, text: "그녀의 손목을 잡는 순간, 이서윤이 걸음을 멈췄다. 가늘게 떨리는 손목이 당신의 손 안에서 느껴졌다.", img: SY_BASE + "/composites/CB-3_wrist_grab/01.jpg" },
+      { speaker: "이서윤", text: "... 왜 이러지, 나. 민재 친구한테 이런 모습 보이면 안 되는데.", img: SY_BASE + "/character_variants/CH-B5_crying/01.png" },
+      { speaker: "당신", text: "괜찮아. 울어도 돼.", isUser: true, img: SY_BASE + "/character_variants/CH-B5_crying/01.png" },
+      { speaker: null, text: "그녀의 울음이 잦아들자, 이서윤은 당신의 가슴에 이마를 기댄 채 가만히 있었다.", img: SY_BASE + "/character_variants/CH-B6_wet_eyes_smile/01.png" },
+      { speaker: "이서윤", text: "... 이러면 안 되는데.", img: SY_BASE + "/character_variants/CH-B6_wet_eyes_smile/01.png" },
+      { speaker: null, text: "고개를 드는 그녀의 얼굴이 바로 앞에 있었다. 촉촉한 눈, 발그레한 볼, 와인에 젖은 입술.", img: SY_BASE + "/character_variants/CH-B6_wet_eyes_smile/01.png" },
+      { speaker: null, text: "숨결이 닿을 만큼 가까운 거리. 이서윤의 시선이 당신의 입술을 스쳤다.", img: SY_BASE + "/character_variants/CH-B6_wet_eyes_smile/01.png" },
+      { choices: [
+        { text: "그녀에게 키스한다.", next: 59, premium: true, coins: 15 },
+        { text: "몸을 떼며 물러난다.", next: 60 }
+      ], img: SY_BASE + "/character_variants/CH-B6_wet_eyes_smile/01.png" },
+      { ending: true, title: "경계를 넘어서", sub: "그날 밤, 두 사람 사이의 선은 사라졌다.", tn: "Best Ending", img: SY_BASE + "/character_variants/CH-B6_wet_eyes_smile/01.png" },
+      { speaker: "이서윤", text: "미안. 내가 술 먹고 이상해진 거야.", img: SY_BASE + "/character_base/CH-B_cream_knit_dress/01.jpg" },
+      { speaker: "이서윤", text: "... 오늘은 여기까지 하자.", img: SY_BASE + "/character_base/CH-B_cream_knit_dress/01.jpg" },
+      { speaker: null, text: "집에 돌아와 누웠지만 잠이 오지 않았다. 그 순간을 놓친 것이 아쉬운 건지, 다행인 건지 알 수 없었다.", img: SY_BASE + "/backgrounds/BG-3_livingroom/01.jpg" },
+      { mode: "messenger", messages: [
+        { who: "partner", text: "자?", delay: 800 },
+        { who: "user", text: "아니" },
+        { who: "partner", text: "... 나도 잠이 안 와", delay: 1000 },
+        { who: "partner", text: "아까 미안했어, 진짜", delay: 1200 },
+        { who: "user", type: "input", placeholder: "서윤에게 하고 싶은 말...", reply: "... 너 진짜 그런 말 잘한다" },
+        { who: "partner", text: "ㅋ...", delay: 800 },
+        { who: "partner", text: "너 진짜 좋은 사람이다", delay: 1200 },
+        { who: "partner", type: "image", url: SY_BASE + "/sent_photos/PH-3_bed_selfie/01.jpg", isLocked: true, cost: 20, delay: 1400 },
+        { who: "partner", text: "잘 자... 내일 보자", delay: 1200 }
+      ]},
+      { ending: true, title: "옆집의 비밀", sub: "절친의 누나. 이혼 직후. 옆집. 그 세 단어가 머릿속에서 빙빙 돌았다.", tn: "Good Ending", img: SY_BASE + "/character_base/CH-C_slip_nightgown/01.jpg" }
+    ]
+  };
+
+  let vnIdx = 0;
+  let vnCoins = VN_STORY.coins;
+
+  function startVNMode() {
+    vnIdx = 0;
+    vnCoins = VN_STORY.coins;
+    document.getElementById('vnCoinsLabel').textContent = vnCoins;
+    document.getElementById('vnGame').classList.add('active');
+    document.getElementById('vnEnding').classList.remove('visible');
+    document.getElementById('vnMessenger').classList.remove('visible');
+    renderVNScene();
+  }
+
+  function exitVNMode() {
+    document.getElementById('vnGame').classList.remove('active');
+    document.getElementById('vnEnding').classList.remove('visible');
+    document.getElementById('vnMessenger').classList.remove('visible');
+  }
+
+  function renderVNScene() {
+    const cur = VN_STORY.scenes[vnIdx];
+    if (!cur) return;
+    if (cur.mode === 'messenger') { openVNMessenger(cur.messages); return; }
+
+    document.getElementById('vnBgImg').src = cur.img || VN_STORY.character.avatar;
+    const area = document.getElementById('vnDialogueArea');
+    area.innerHTML = '';
+
+    if (cur.ending) {
+      document.getElementById('vnEndType').textContent = cur.tn || 'Ending';
+      document.getElementById('vnEndTitle').textContent = cur.title;
+      document.getElementById('vnEndSub').textContent = cur.sub;
+      document.getElementById('vnEndBg').src = cur.img || VN_STORY.character.avatar;
+      setTimeout(() => document.getElementById('vnEnding').classList.add('visible'), 500);
+      return;
+    }
+    if (cur.choices) {
+      const container = document.createElement('div');
+      container.className = 'vn-choices';
+      cur.choices.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'vn-choice-btn ' + (c.premium ? 'premium' : 'free');
+        let html = '<div class="choice-text">' + c.text + '</div>';
+        const sendSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+        if (c.premium) {
+          html += '<div class="vn-choice-send-wrap"><div class="vn-choice-cost"><span class="ccoin"></span>' + c.coins + '</div><div class="vn-choice-send">' + sendSvg + '</div></div>';
+        } else {
+          html += '<div class="vn-choice-send-wrap"><div class="vn-choice-send">' + sendSvg + '</div></div>';
+        }
+        btn.innerHTML = html;
+        btn.addEventListener('click', () => pickVNChoice(c));
+        container.appendChild(btn);
+      });
+      area.appendChild(container);
+      return;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'vn-dialogue';
+    wrap.onclick = advanceVNScene;
+    if (cur.isUser) {
+      wrap.innerHTML = '<div class="vn-speaker-badge user">당신</div><div class="vn-dialogue-text">' + cur.text + '</div>';
+    } else if (cur.speaker) {
+      wrap.innerHTML = '<div class="vn-speaker-badge npc">' + cur.speaker + '</div><div class="vn-dialogue-text">' + cur.text + '</div>';
+    } else {
+      wrap.innerHTML = '<div class="vn-dialogue-text narration">' + cur.text + '</div>';
+    }
+    area.appendChild(wrap);
+    const hint = document.createElement('div');
+    hint.className = 'vn-tap-hint';
+    hint.textContent = '탭하여 진행 ›';
+    area.appendChild(hint);
+  }
+
+  function advanceVNScene() { vnIdx++; renderVNScene(); }
+
+  function pickVNChoice(c) {
+    if (c.premium) {
+      if (vnCoins < c.coins) { showVNToast('코인이 부족해요'); return; }
+      vnCoins -= c.coins;
+      document.getElementById('vnCoinsLabel').textContent = vnCoins;
+    }
+    vnIdx = c.next;
+    renderVNScene();
+  }
+
+  function showVNToast(msg) {
+    const t = document.getElementById('vnToast');
+    t.textContent = msg;
+    t.classList.add('visible');
+    setTimeout(() => t.classList.remove('visible'), 1800);
+  }
+
+  document.getElementById('vnBg').addEventListener('click', () => {
+    const cur = VN_STORY.scenes[vnIdx];
+    if (!cur || cur.choices || cur.ending || cur.mode === 'messenger') return;
+    advanceVNScene();
+  });
+
+  document.getElementById('vnBackBtn').addEventListener('click', exitVNMode);
+  document.getElementById('vnEndContinue').addEventListener('click', () => {
+    exitVNMode();
+    goStage('tomorrow');
+  });
+  document.getElementById('vnEndRestart').addEventListener('click', () => {
+    document.getElementById('vnEnding').classList.remove('visible');
+    vnIdx = 0; vnCoins = VN_STORY.coins;
+    document.getElementById('vnCoinsLabel').textContent = vnCoins;
+    renderVNScene();
+  });
+
+  // VN Messenger
+  let vnMsgQueue = [];
+  let vnMsgIdx = 0;
+
+  function openVNMessenger(messages) {
+    vnMsgQueue = messages;
+    vnMsgIdx = 0;
+    document.getElementById('vnMsgChat').innerHTML = '';
+    document.getElementById('vnMsgSendArea').style.display = 'none';
+    document.getElementById('vnMessenger').classList.add('visible');
+    processVNMsg();
+  }
+
+  function processVNMsg() {
+    const chat = document.getElementById('vnMsgChat');
+    if (vnMsgIdx >= vnMsgQueue.length) {
+      const cont = document.createElement('button');
+      cont.className = 'vn-msg-continue';
+      cont.textContent = '이어서 진행하기 →';
+      cont.addEventListener('click', () => {
+        document.getElementById('vnMessenger').classList.remove('visible');
+        advanceVNScene();
+      });
+      chat.appendChild(cont);
+      chat.scrollTop = chat.scrollHeight;
+      return;
+    }
+    const m = vnMsgQueue[vnMsgIdx];
+    if (m.who === 'partner') {
+      const t = document.createElement('div');
+      t.className = 'vn-msg-row partner';
+      t.innerHTML = '<div class="vn-msg-av"><img src="' + VN_STORY.character.avatar + '"/></div><div class="vn-msg-typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+      chat.appendChild(t);
+      chat.scrollTop = chat.scrollHeight;
+      setTimeout(() => {
+        t.remove();
+        addVNPartnerMsg(m);
+        vnMsgIdx++;
+        setTimeout(processVNMsg, 250);
+      }, m.delay || 800);
+    } else {
+      if (m.type === 'input') {
+        showVNFreeInput(m);
+      } else {
+        addVNUserBubble(m.text);
+        vnMsgIdx++;
+        setTimeout(processVNMsg, 350);
+      }
+    }
+  }
+
+  function addVNPartnerMsg(m) {
+    const chat = document.getElementById('vnMsgChat');
+    const row = document.createElement('div');
+    row.className = 'vn-msg-row partner';
+    if (m.type === 'image') {
+      const lockedClass = m.isLocked ? 'locked' : '';
+      const overlay = m.isLocked
+        ? '<div class="vn-msg-img-overlay"><div>비공개 사진</div><div class="vn-msg-img-cost"><span class="ccoin"></span>' + m.cost + '</div></div>'
+        : '';
+      row.innerHTML =
+        '<div class="vn-msg-av"><img src="' + VN_STORY.character.avatar + '"/></div>' +
+        '<div class="vn-msg-img ' + lockedClass + '" data-cost="' + (m.cost||0) + '" data-locked="' + (m.isLocked?'1':'0') + '">' +
+        '  <img src="' + m.url + '"/>' + overlay + '</div>';
+      chat.appendChild(row);
+      const imgEl = row.querySelector('.vn-msg-img');
+      imgEl.addEventListener('click', () => {
+        if (imgEl.dataset.locked === '1') {
+          const cost = parseInt(imgEl.dataset.cost, 10);
+          if (vnCoins < cost) { showVNToast('코인이 부족해요'); return; }
+          vnCoins -= cost;
+          document.getElementById('vnCoinsLabel').textContent = vnCoins;
+          imgEl.classList.remove('locked');
+          imgEl.dataset.locked = '0';
+          const ov = imgEl.querySelector('.vn-msg-img-overlay');
+          if (ov) ov.remove();
+        }
+      });
+    } else {
+      row.innerHTML = '<div class="vn-msg-av"><img src="' + VN_STORY.character.avatar + '"/></div><div class="vn-msg-bubble">' + m.text + '</div>';
+      chat.appendChild(row);
+    }
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addVNUserBubble(text) {
+    const chat = document.getElementById('vnMsgChat');
+    const row = document.createElement('div');
+    row.className = 'vn-msg-row user';
+    row.innerHTML = '<div class="vn-msg-bubble">' + text + '</div>';
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function showVNFreeInput(m) {
+    const area = document.getElementById('vnMsgSendArea');
+    area.style.display = 'block';
+    const input = document.getElementById('vnMsgInput');
+    input.value = '';
+    input.placeholder = m.placeholder || '메시지를 입력하세요...';
+    input.focus();
+    const send = () => {
+      const txt = input.value.trim();
+      if (!txt) return;
+      addVNUserBubble(txt);
+      input.value = '';
+      area.style.display = 'none';
+      vnMsgIdx++;
+      if (m.reply) {
+        setTimeout(() => {
+          vnMsgQueue.splice(vnMsgIdx, 0, { who: 'partner', text: m.reply, delay: 1100 });
+          processVNMsg();
+        }, 350);
+      } else {
+        setTimeout(processVNMsg, 250);
+      }
+    };
+    document.getElementById('vnMsgSendBtn').onclick = send;
+    input.onkeydown = e => { if (e.key === 'Enter') send(); };
+  }
+
+  document.getElementById('vnMsgBackBtn').addEventListener('click', () => {
+    document.getElementById('vnMessenger').classList.remove('visible');
+  });
+
+  // Init
+  goStage('welcome');
+</script>
+</body>
+</html>

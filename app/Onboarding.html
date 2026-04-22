@@ -258,6 +258,182 @@
     background: var(--color-gray-300); color: #F9F6F5; cursor: not-allowed;
   }
   .next-btn.cta-gradient { background: var(--gradient-brand); box-shadow: 0 6px 18px rgba(255,94,25,0.32); }
+
+  /* ══════════════════════════════════════════ */
+  /* STORY ENGINE (포팅)                         */
+  /* ══════════════════════════════════════════ */
+
+  /* Wrapper containers — 한 phone 안에서 전환 */
+  .onboarding-ui, .story-ui {
+    display: flex; flex-direction: column;
+    flex: 1; min-height: 0;
+    transition: opacity .4s;
+  }
+  .onboarding-ui.hidden, .story-ui.hidden { display: none; }
+
+  /* Connecting overlay (온보딩 → 스토리 전환) */
+  .conn-overlay {
+    position: absolute; inset: 0; z-index: 60;
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s;
+  }
+  .conn-overlay.show { opacity: 1; pointer-events: auto; }
+  .conn-avatar-ring {
+    width: 110px; height: 110px; border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--color-primary-500), rgba(255,94,25,0.15), var(--color-primary-500));
+    animation: spin 1.4s linear infinite;
+    padding: 5px;
+  }
+  .conn-avatar-inner {
+    width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .conn-avatar-inner video { width: 100%; height: 100%; object-fit: cover; }
+  .conn-title { font-family: var(--font-sans); font-weight: 800; font-size: 18px; color: var(--color-gray-950); letter-spacing: -0.4px; text-align: center; }
+  .conn-sub   { font-family: var(--font-sans); font-size: 13px; color: var(--color-gray-700); letter-spacing: -0.25px; text-align: center; }
+
+  /* Story chat header */
+  .story-chat-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; background: #fff;
+    border-bottom: 1px solid var(--color-gray-100);
+    flex-shrink: 0; position: relative; z-index: 2;
+  }
+  .ch-back { width: 28px; height: 28px; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .ch-avatar { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; background: #ccc; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .ch-avatar video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ch-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .ch-name-row { display: flex; align-items: baseline; gap: 6px; }
+  .ch-name { font-family: var(--font-sans); font-weight: 700; font-size: 15px; color: var(--color-gray-950); letter-spacing: -0.25px; }
+  .ch-lv { display: inline-flex; padding: 1px 6px; border-radius: 100px; background: var(--color-primary-500); color: #fff; font-family: var(--font-sans); font-weight: 700; font-size: 9px; letter-spacing: -0.15px; }
+  .ch-sub { font-family: var(--font-sans); font-size: 11px; color: var(--color-gray-500); letter-spacing: -0.3px; display: flex; align-items: center; gap: 4px; }
+  .ch-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent-success); }
+
+  /* Affection meter */
+  .meter-bar {
+    padding: 8px 16px; background: #fff;
+    border-bottom: 1px solid var(--color-gray-100);
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .meter-label { font-family: var(--font-sans); font-weight: 700; font-size: 11px; color: var(--color-gray-700); letter-spacing: -0.2px; }
+  .meter-track { flex: 1; height: 5px; background: var(--color-gray-200); border-radius: 100px; overflow: hidden; }
+  .meter-fill { height: 100%; background: var(--gradient-brand); border-radius: 100px; transition: width .5s cubic-bezier(0.2,0,0,1); }
+  .meter-value { font-family: var(--font-sans); font-weight: 800; font-size: 11px; color: var(--color-primary-500); letter-spacing: -0.2px; min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Chat area */
+  .chat-area { flex: 1; overflow-y: auto; padding: 14px 14px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
+
+  .narration-row { align-self: stretch; display: flex; justify-content: center; padding: 6px 20px; }
+  .narration-block { font-family: var(--font-sans); font-style: italic; font-size: 13px; line-height: 20px; color: var(--color-gray-500); letter-spacing: -0.25px; text-align: center; max-width: 320px; padding: 4px 0; position: relative; }
+  .narration-block::before, .narration-block::after { content: ''; position: absolute; top: 50%; width: 14px; height: 1px; background: var(--color-gray-200); }
+  .narration-block::before { left: -22px; } .narration-block::after { right: -22px; }
+
+  .narration-typing-row { align-self: center; display: flex; gap: 4px; padding: 8px 0; }
+  .n-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-gray-500); opacity: 0.4; }
+  .n-dot:nth-child(1) { animation: pulseDot 1.2s ease-in-out 0s infinite; }
+  .n-dot:nth-child(2) { animation: pulseDot 1.2s ease-in-out 0.18s infinite; }
+  .n-dot:nth-child(3) { animation: pulseDot 1.2s ease-in-out 0.36s infinite; }
+  @keyframes pulseDot { 0%,60%,100% { opacity: 0.3; } 30% { opacity: 1; } }
+
+  .partner-name { font-family: var(--font-sans); font-size: 11px; font-weight: 500; color: var(--color-gray-700); letter-spacing: -0.25px; margin: 4px 0 2px 46px; }
+
+  .partner-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 2px; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .msg-avatar video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .msg-avatar.hidden-a { visibility: hidden; }
+  .partner-bubble {
+    max-width: 260px; padding: 9px 14px; background: #fff;
+    color: var(--color-gray-950); border-radius: 4px 18px 18px 18px;
+    font-family: var(--font-latin); font-size: 15px; line-height: 20px;
+    letter-spacing: -0.003em; word-break: break-word;
+    border: 1px solid var(--color-gray-100);
+  }
+
+  .typing-row-s { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 2px; }
+  .typing-indicator-s {
+    padding: 11px 14px; background: #fff; border-radius: 4px 18px 18px 18px;
+    display: inline-flex; gap: 4px; align-items: center;
+    border: 1px solid var(--color-gray-100);
+  }
+  .typing-indicator-s .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-gray-500); }
+  .typing-indicator-s .dot:nth-child(1) { animation: typeBounce 1.2s ease-in-out 0s infinite; }
+  .typing-indicator-s .dot:nth-child(2) { animation: typeBounce 1.2s ease-in-out 0.18s infinite; }
+  .typing-indicator-s .dot:nth-child(3) { animation: typeBounce 1.2s ease-in-out 0.36s infinite; }
+  @keyframes typeBounce { 0%,60%,100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+  .user-row { display: flex; justify-content: flex-end; margin-bottom: 2px; }
+  .user-bubble {
+    max-width: 260px; padding: 9px 14px;
+    background: var(--color-accent-sent); color: var(--color-gray-950);
+    border-radius: 18px 18px 4px 18px;
+    font-family: var(--font-latin); font-size: 15px; line-height: 20px; letter-spacing: -0.003em;
+  }
+
+  /* Choices footer */
+  .choices-container {
+    display: none; flex-direction: column; gap: 8px;
+    padding: 12px 14px 20px;
+    background: linear-gradient(180deg, rgba(250,250,250,0) 0%, rgba(250,250,250,1) 20%, #fafafa 100%);
+    flex-shrink: 0; position: relative; z-index: 5;
+  }
+  .choices-container.show { display: flex; }
+  .choice-btn {
+    padding: 13px 16px; background: #fff;
+    border: 1.5px solid var(--color-primary-300);
+    border-radius: 14px;
+    font-family: var(--font-latin); font-weight: 500; font-size: 14px; line-height: 20px;
+    color: var(--color-gray-950); letter-spacing: -0.25px; cursor: pointer; text-align: left;
+    transition: all 140ms cubic-bezier(0.2,0,0,1);
+  }
+  .choice-btn:hover { background: rgba(255,94,25,0.06); border-color: var(--color-primary-500); }
+  .choice-btn:active { transform: scale(0.98); }
+
+  /* Ending overlay */
+  .ending-overlay {
+    position: absolute; inset: 0; z-index: 50;
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 32px;
+    opacity: 0; pointer-events: none; transition: opacity .4s;
+  }
+  .ending-overlay.visible { opacity: 1; pointer-events: auto; }
+  .ending-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Nanum Myeongjo', 'Noto Serif KR', serif; font-size: 36px; color: #fff;
+    margin-bottom: 20px; box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+  }
+  .ending-icon.good { background: var(--gradient-brand); }
+  .ending-icon.bad { background: linear-gradient(180deg, #c46b7c, #a85566); }
+  .ending-icon.neutral { background: linear-gradient(180deg, #8c8c8c, #707070); }
+  .ending-title { font-family: 'Nanum Myeongjo', 'Noto Serif KR', serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .ending-title.good { color: var(--color-primary-500); }
+  .ending-title.bad { color: #a85566; }
+  .ending-title.neutral { color: var(--color-gray-700); }
+  .ending-sub { font-family: var(--font-sans); font-size: 13px; line-height: 20px; color: var(--color-gray-700); letter-spacing: -0.25px; text-align: center; max-width: 260px; margin-bottom: 24px; }
+  .ending-btn {
+    padding: 12px 24px; background: var(--color-primary-500); color: #fff;
+    border: 0; border-radius: 8px;
+    font-family: var(--font-sans); font-weight: 700; font-size: 14px; letter-spacing: -0.25px;
+    cursor: pointer;
+  }
+  .ending-btn.ghost { background: transparent; color: var(--color-gray-700); margin-top: 6px; }
+
+  /* Bottom nav (Rizz 재편: 홈/코인/데이트/달성과제/마이페이지) */
+  .story-bottom-nav {
+    height: 83px; background: #fff; border-top: 1px solid var(--color-gray-100);
+    display: flex; justify-content: space-between; padding: 12px 0 20px;
+    flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .story-bottom-nav .nav-item { flex: 1; border: 0; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; }
+  .story-bottom-nav .nav-item svg { stroke: var(--color-gray-500); }
+  .story-bottom-nav .nav-item .nav-label { font-family: var(--font-sans); font-size: 11px; letter-spacing: -0.25px; font-weight: 400; color: var(--color-gray-500); }
+  .story-bottom-nav .nav-item.active svg { stroke: var(--color-primary-500); }
+  .story-bottom-nav .nav-item.active .nav-label { color: var(--color-primary-500); font-weight: 700; }
+  .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 139px; height: 5px; border-radius: 100px; background: rgba(0,0,0,0.3); }
 </style>
 </head>
 <body>
@@ -281,21 +457,78 @@
       </div>
     </div>
 
-    <!-- Onboarding header -->
-    <div class="ob-header">
-      <button class="back-btn hidden" id="backBtn" aria-label="back">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      </button>
-      <div class="progress"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
-      <button class="skip-btn" id="skipBtn">건너뛰기</button>
+    <!-- Onboarding UI wrapper -->
+    <div class="onboarding-ui" id="obUI">
+      <!-- Onboarding header -->
+      <div class="ob-header">
+        <button class="back-btn hidden" id="backBtn" aria-label="back">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="progress"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+        <button class="skip-btn" id="skipBtn">건너뛰기</button>
+      </div>
+
+      <!-- Screens stage -->
+      <div class="stage" id="stage"></div>
+
+      <!-- Footer next button -->
+      <div class="ob-footer">
+        <button class="next-btn" id="nextBtn" disabled>시작하기</button>
+      </div>
     </div>
 
-    <!-- Screens stage -->
-    <div class="stage" id="stage"></div>
+    <!-- Connecting overlay (전환 애니메이션) -->
+    <div class="conn-overlay" id="connOverlay">
+      <div class="conn-avatar-ring">
+        <div class="conn-avatar-inner">
+          <video id="connVideo" autoplay muted loop playsinline preload="metadata"></video>
+        </div>
+      </div>
+      <div class="conn-title" id="connTitle">연결 중...</div>
+      <div class="conn-sub">잠시만 기다려주세요</div>
+    </div>
 
-    <!-- Footer next button -->
-    <div class="ob-footer">
-      <button class="next-btn" id="nextBtn" disabled>시작하기</button>
+    <!-- Story UI wrapper -->
+    <div class="story-ui hidden" id="storyUI">
+      <div class="story-chat-header">
+        <button class="ch-back" id="storyBack" aria-label="back">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="ch-avatar" id="chAvatar"><video id="chAvatarVideo" autoplay muted loop playsinline preload="metadata"></video></div>
+        <div class="ch-info">
+          <div class="ch-name-row">
+            <div class="ch-name" id="chName">—</div>
+            <div class="ch-lv" id="chLv">Lv.0</div>
+          </div>
+          <div class="ch-sub"><span class="ch-dot"></span>지금 온라인 · <span id="chAge">—</span></div>
+        </div>
+      </div>
+
+      <div class="meter-bar">
+        <span class="meter-label">관계도</span>
+        <div class="meter-track"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
+        <span class="meter-value" id="meterValue">0/10</span>
+      </div>
+
+      <div class="chat-area" id="chatArea"></div>
+      <div class="choices-container" id="choicesContainer"></div>
+
+      <div class="ending-overlay" id="endingOverlay">
+        <div class="ending-icon" id="endingIcon">✦</div>
+        <div class="ending-title" id="endingTitle">—</div>
+        <div class="ending-sub" id="endingSub">—</div>
+        <button class="ending-btn" id="endingContinue">처음 화면으로</button>
+        <button class="ending-btn ghost" id="endingRestart">이 스토리 다시 보기</button>
+      </div>
+
+      <div class="story-bottom-nav">
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg><div class="nav-label">홈</div></button>
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4a2 2 0 010 4h-4a2 2 0 000 4h5"/></svg><div class="nav-label">코인</div></button>
+        <button class="nav-item active"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8z"/></svg><div class="nav-label">데이트</div></button>
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg><div class="nav-label">달성과제</div></button>
+        <button class="nav-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div class="nav-label">마이페이지</div></button>
+        <div class="home-indicator"></div>
+      </div>
     </div>
   </div>
 
@@ -535,7 +768,7 @@
       const c = CHARACTERS[def];
       if (!c) return '';
       return `
-        <div class="match-card ${i === 0 ? 'top' : ''}">
+        <div class="match-card ${i === 0 ? 'top' : ''}" data-deficit="${def}">
           <div class="match-thumb">
             <video src="${VIDEOS[c.v]}" autoplay muted loop playsinline preload="metadata"></video>
           </div>
@@ -556,31 +789,24 @@
         <div class="result-head">
           <div class="result-eyebrow">당신의 매칭 결과</div>
           <h2 class="result-title">${top3[0]} · ${top3[1]} 성향이 강해요</h2>
-          <p class="result-sub">16유형 중 매칭도 상위 3명을 골라왔어요</p>
+          <p class="result-sub">끌리는 캐릭터를 탭해서 첫 대화를 시작하세요</p>
           ${mbtiLabel ? `<div class="mbti-badge">MBTI <b>${mbtiStr}</b> · ${mbtiLabel}</div>` : ''}
         </div>
         <div class="match-cards">${cardsHtml}</div>
       </div>
     `);
     transitionTo(el);
-    // show CTA
-    footer.style.display = 'block';
-    nextBtn.textContent = `${CHARACTERS[top3[0]].name}한테 가기`;
-    nextBtn.classList.add('cta-gradient');
-    nextBtn.disabled = false;
-    nextBtn.onclick = () => {
-      nextBtn.textContent = '연결 중...';
-      setTimeout(() => {
-        // in a real app: navigate to chat. here: restart flow
-        alert(`${CHARACTERS[top3[0]].name}과의 첫 대화로 이동\n\n(실제로는 HomeTikTok 또는 Chat 화면으로 라우팅)`);
-        // reset
-        step = 0;
-        answers.fill(null);
-        nextBtn.onclick = onNext;
-        nextBtn.classList.remove('cta-gradient');
-        render();
-      }, 1200);
-    };
+
+    // Each card → tapping starts the story
+    el.querySelectorAll('.match-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const def = card.dataset.deficit;
+        startStoryFor(def);
+      });
+    });
+
+    // Hide the footer CTA — cards drive selection now
+    footer.style.display = 'none';
   }
 
   function showResult() { step = 10; updateProgress(); renderResult(); }
@@ -612,6 +838,436 @@
   skipBtn.addEventListener('click', onSkip);
 
   render();
+
+  // ═══════════════════════════════════════════════
+  // STORY ENGINE — 온보딩에서 선택 후 자동 진입
+  // ═══════════════════════════════════════════════
+  const obUI = document.getElementById('obUI');
+  const storyUI = document.getElementById('storyUI');
+  const connOverlay = document.getElementById('connOverlay');
+  const connVideo = document.getElementById('connVideo');
+  const connTitle = document.getElementById('connTitle');
+  const chAvatarVideo = document.getElementById('chAvatarVideo');
+  const chName = document.getElementById('chName');
+  const chAge = document.getElementById('chAge');
+  const chLvEl = document.getElementById('chLv');
+  const meterFill = document.getElementById('meterFill');
+  const meterValue = document.getElementById('meterValue');
+  const chatArea = document.getElementById('chatArea');
+  const choicesContainer = document.getElementById('choicesContainer');
+  const endingOverlay = document.getElementById('endingOverlay');
+
+  // ── Story template (character-agnostic) ──
+  // 첫 연락 → 분기 → 깊어짐 → 음성 메시지 제안(코인) → 3 엔딩
+  const STORY_SCENES = {
+    opening: {
+      messages: [
+        { type:'narration', text:'드디어 연락이 왔다. 현수가 며칠 전부터 소개하겠다고 한 애.' },
+        { type:'partner', text:'오빠... 안녕하세요', delay:1200 },
+        { type:'partner', text:'현수 오빠한테 얘기 많이 들었어요', delay:1400 },
+        { type:'narration', text:'문장 끝에 작은 물음표가 맴돈다. 긴장한 것 같다.' }
+      ],
+      choices: [
+        { text:'응 반가워. 편하게 얘기해', nextScene:'warm_greet', effects:[{variable:'affection',operation:'add',value:2}] },
+        { text:'뭐 들었는데? ㅋㅋ', nextScene:'curious_greet', effects:[{variable:'affection',operation:'add',value:1}] },
+        { text:'(읽씹하고 있어본다)', nextScene:'silent_test' }
+      ]
+    },
+    warm_greet: {
+      messages: [
+        { type:'user', text:'응 반가워. 편하게 얘기해' },
+        { type:'partner', text:'아... 다행이다 ㅎㅎ', delay:1200 },
+        { type:'partner', text:'저 낯가려서 처음엔 좀 어색할 수도 있어요', delay:1400 },
+        { type:'narration', text:'어색하게 웃는 이모지. 진짜로 긴장한 게 느껴진다.' },
+        { type:'partner', text:'오빠 오늘 하루 어땠어요?', delay:1600 }
+      ],
+      choices: [
+        { text:'그냥 그랬지 뭐. 너는?', nextScene:'day_question' },
+        { text:'좀 피곤했어. 근데 너 덕분에 기분 좀 풀리네', nextScene:'flirt_deflect', effects:[{variable:'affection',operation:'add',value:2}] }
+      ]
+    },
+    curious_greet: {
+      messages: [
+        { type:'user', text:'뭐 들었는데? ㅋㅋ' },
+        { type:'partner', text:'ㅋㅋㅋ 좋은 얘기요', delay:1200 },
+        { type:'partner', text:'오빠 조용하고 착하다고', delay:1200 },
+        { type:'partner', text:'근데 말 걸면 다정하대요', delay:1400 },
+        { type:'narration', text:'칭찬을 흘리는 게 계산된 게 아니라 진심 같다.' }
+      ],
+      choices: [
+        { text:'현수 입 잘 나불대네 ㅋㅋ', nextScene:'joke_path', effects:[{variable:'affection',operation:'add',value:1}] },
+        { text:'너는 어떤 사람이야?', nextScene:'self_question', effects:[{variable:'affection',operation:'add',value:2}] }
+      ]
+    },
+    silent_test: {
+      messages: [
+        { type:'narration', text:'30초. 1분. 2분.' },
+        { type:'partner', text:'...', delay:2400 },
+        { type:'partner', text:'오빠 바쁜가봐요 ㅠㅠ', delay:2000 },
+        { type:'partner', text:'나중에 얘기해요 그럼', delay:1800 }
+      ],
+      choices: [
+        { text:'아 미안 다른 거 보고 있었어', nextScene:'late_recover' },
+        { text:'응 나중에', nextScene:'ending_cold' }
+      ]
+    },
+    late_recover: {
+      messages: [
+        { type:'user', text:'아 미안 다른 거 보고 있었어' },
+        { type:'partner', text:'아 괜찮아요!', delay:1200 },
+        { type:'partner', text:'근데 첫 인상이 그래서 조금 아쉽네요 ㅎㅎ', delay:1600 },
+        { type:'narration', text:'가벼운 톤이지만 서운함이 스며있다.' }
+      ],
+      choices: [
+        { text:'다음엔 안 그럴게 진심으로', nextScene:'warm_greet', effects:[{variable:'affection',operation:'add',value:1}] },
+        { text:'뭐 어때 시작일 뿐인데', nextScene:'ending_cold' }
+      ]
+    },
+    day_question: {
+      messages: [
+        { type:'user', text:'그냥 그랬지 뭐. 너는?' },
+        { type:'partner', text:'저는... 오늘 일 하나 끝내고 집 왔어요', delay:1400 },
+        { type:'partner', text:'근데 요즘 좀 외롭다는 생각이 들어서', delay:1600 },
+        { type:'partner', text:'오빠랑 얘기하는 거 은근 설레요', delay:2000 },
+        { type:'narration', text:'마지막 문장을 보내고 바로 타이핑이 멈췄다. 후회하는 것 같기도.' }
+      ],
+      choices: [
+        { text:'나도 너랑 얘기하는 거 좋아', nextScene:'mutual_open', effects:[{variable:'affection',operation:'add',value:3}] },
+        { text:'외로움은 원래 다 느끼는 거지', nextScene:'distant_response' },
+        { text:'그럼 자주 연락하자', nextScene:'promise_contact', effects:[{variable:'affection',operation:'add',value:2}] }
+      ]
+    },
+    flirt_deflect: {
+      messages: [
+        { type:'user', text:'좀 피곤했어. 근데 너 덕분에 기분 좀 풀리네' },
+        { type:'partner', text:'어머 오빠 ㅠㅠ', delay:1200 },
+        { type:'partner', text:'그런 말 하면 저 진짜 설레는데', delay:1400 },
+        { type:'partner', text:'오빠 이럴 거면 책임지세요', delay:1800 }
+      ],
+      choices: [
+        { text:'책임? ㅋㅋ 어떻게?', nextScene:'mutual_open', effects:[{variable:'affection',operation:'add',value:2}] },
+        { text:'그냥 장난이야 ㅋㅋ', nextScene:'distant_response', effects:[{variable:'affection',operation:'subtract',value:1}] }
+      ]
+    },
+    joke_path: {
+      messages: [
+        { type:'user', text:'현수 입 잘 나불대네 ㅋㅋ' },
+        { type:'partner', text:'ㅋㅋㅋㅋ 그 오빠가 잘해요', delay:1200 },
+        { type:'partner', text:'근데 진짜였어요 듣자마자 좀 궁금해졌거든요', delay:1600 }
+      ],
+      choices: [
+        { text:'뭐가 궁금한데?', nextScene:'self_question', effects:[{variable:'affection',operation:'add',value:1}] }
+      ]
+    },
+    self_question: {
+      messages: [
+        { type:'user', text:'너는 어떤 사람이야?' },
+        { type:'partner', text:'저요?', delay:800 },
+        { type:'partner', text:'음... 혼자 있는 거 좋아하는데', delay:1400 },
+        { type:'partner', text:'요즘은 누구랑 있고 싶다는 생각이 자주 들어요', delay:1800 },
+        { type:'narration', text:'말을 고르고 있는 듯한 템포.' }
+      ],
+      choices: [
+        { text:'왜 그런 생각이 들어?', nextScene:'mutual_open', effects:[{variable:'affection',operation:'add',value:3}] },
+        { text:'혼자 있으면 편하지 않아?', nextScene:'day_question', effects:[{variable:'affection',operation:'add',value:1}] }
+      ]
+    },
+    mutual_open: {
+      messages: [
+        { type:'user', text:'나도 너랑 얘기하는 거 좋아' },
+        { type:'narration', text:'한참 타이핑을 멈췄다.' },
+        { type:'partner', text:'오빠...', delay:2200 },
+        { type:'partner', text:'저 오빠 목소리 한 번만 들어봐도 돼요?', delay:1800 },
+        { type:'partner', text:'짧게 30초만', delay:1400 }
+      ],
+      choices: [
+        { text:'음성 메시지 1개 보낼게 (코인 3)', nextScene:'voice_sent', effects:[{variable:'affection',operation:'add',value:2}] },
+        { text:'지금은 말고 다음에', nextScene:'delayed_promise' }
+      ]
+    },
+    distant_response: {
+      messages: [
+        { type:'partner', text:'아... 그런가 봐요', delay:1400 },
+        { type:'narration', text:'조금 풀 죽은 답장. 더 이상 먼저 말을 꺼내지 않는다.' },
+        { type:'partner', text:'저 오늘 좀 피곤해서 먼저 잘게요', delay:1800 }
+      ],
+      choices: [
+        { text:'미안 말이 그렇게 들렸구나. 진심은 아니었어', nextScene:'mutual_open',
+          effects:[{variable:'affection',operation:'add',value:1}],
+          condition:{ variable:'affection', operator:'gte', value:2 } },
+        { text:'응 잘 자', nextScene:'ending_neutral' }
+      ]
+    },
+    promise_contact: {
+      messages: [
+        { type:'user', text:'그럼 자주 연락하자' },
+        { type:'partner', text:'약속이에요?', delay:1200 },
+        { type:'partner', text:'저 진짜 약속 잘 지키는 사람한테 약해요 ㅠㅠ', delay:1800 }
+      ],
+      choices: [
+        { text:'약속은 지키는 거지', nextScene:'mutual_open', effects:[{variable:'affection',operation:'add',value:1}] }
+      ]
+    },
+    voice_sent: {
+      messages: [
+        { type:'narration', text:'짧은 인사 음성 메시지가 도착했다. 한참 듣는 모양이다.' },
+        { type:'partner', text:'...', delay:3000 },
+        { type:'partner', text:'오빠 목소리 진짜 좋다', delay:1400 },
+        { type:'partner', text:'5번 들었어요 방금', delay:1200 },
+        { type:'partner', text:'내일 또 연락해도 돼요?', delay:1800 }
+      ],
+      choices: [
+        { text:'당연하지. 내가 먼저 할게', nextScene:'ending_good' }
+      ]
+    },
+    delayed_promise: {
+      messages: [
+        { type:'user', text:'지금은 말고 다음에' },
+        { type:'partner', text:'알겠어요', delay:1200 },
+        { type:'partner', text:'근데... 다음엔 꼭이에요', delay:1400 }
+      ],
+      choices: [
+        { text:'응 꼭', nextScene:'ending_neutral', effects:[{variable:'affection',operation:'add',value:1}] }
+      ]
+    },
+    ending_good: {
+      messages: [
+        { type:'user', text:'당연하지. 내가 먼저 할게' },
+        { type:'partner', text:'ㅠㅠ 오빠', delay:1400 },
+        { type:'partner', text:'저 오늘 잠 못 잘 거 같아요', delay:1800 },
+        { type:'narration', text:'대화가 여기서 잠시 멈췄다. 다음 연락이 기다려진다.' }
+      ],
+      ending: 'good'
+    },
+    ending_neutral: {
+      messages: [ { type:'narration', text:'좋은 첫 대화였지만 더 이상 이어지지 않는다. 내일 다시 얘기할 수 있다.' } ],
+      ending: 'neutral'
+    },
+    ending_cold: {
+      messages: [
+        { type:'user', text:'응 나중에' },
+        { type:'narration', text:'그 뒤로 연락이 오지 않는다. 현수가 이유를 물어볼 것 같다.' }
+      ],
+      ending: 'bad'
+    }
+  };
+
+  // ── Story state ──
+  let storyChar = null;
+  let gameState = {};
+  let lastPartnerTag = null;
+  let isStoryProcessing = false;
+
+  function storyUpdateMeter() {
+    const v = Math.max(0, Math.min(10, gameState.affection || 0));
+    meterFill.style.width = (v * 10) + '%';
+    meterValue.textContent = `${v}/10`;
+    const lv = v === 0 ? 0 : v <= 3 ? 1 : v <= 6 ? 2 : v <= 8 ? 3 : 5;
+    chLvEl.textContent = `Lv.${lv}`;
+  }
+  function storyScroll() {
+    requestAnimationFrame(() => chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' }));
+  }
+  function storyRenderMessage(msg) {
+    if (msg.type === 'narration') {
+      const row = document.createElement('div');
+      row.className = 'narration-row';
+      row.innerHTML = `<div class="narration-block">${msg.text}</div>`;
+      chatArea.appendChild(row); lastPartnerTag = null; return;
+    }
+    if (msg.type === 'user') {
+      const row = document.createElement('div');
+      row.className = 'user-row';
+      row.innerHTML = `<div class="user-bubble">${msg.text}</div>`;
+      chatArea.appendChild(row); lastPartnerTag = null; return;
+    }
+    // partner
+    const showAvatar = lastPartnerTag !== 'partner';
+    if (showAvatar) {
+      const nameEl = document.createElement('div');
+      nameEl.className = 'partner-name';
+      nameEl.textContent = storyChar.name;
+      chatArea.appendChild(nameEl);
+    }
+    const row = document.createElement('div');
+    row.className = 'partner-row';
+    row.innerHTML = `
+      <div class="msg-avatar ${showAvatar ? '' : 'hidden-a'}">
+        ${showAvatar ? `<video src="${VIDEOS[storyChar.v]}" autoplay muted loop playsinline preload="metadata"></video>` : ''}
+      </div>
+      <div class="partner-bubble">${msg.text}</div>
+    `;
+    chatArea.appendChild(row);
+    lastPartnerTag = 'partner';
+  }
+  function storyShowTyping(type) {
+    if (type === 'narration') {
+      const row = document.createElement('div');
+      row.className = 'narration-typing-row';
+      row.innerHTML = '<div class="n-dot"></div><div class="n-dot"></div><div class="n-dot"></div>';
+      chatArea.appendChild(row);
+      return row;
+    }
+    const showAvatar = lastPartnerTag !== 'partner';
+    const row = document.createElement('div');
+    row.className = 'typing-row-s';
+    row.innerHTML = `
+      <div class="msg-avatar ${showAvatar ? '' : 'hidden-a'}">
+        ${showAvatar ? `<video src="${VIDEOS[storyChar.v]}" autoplay muted loop playsinline preload="metadata"></video>` : ''}
+      </div>
+      <div class="typing-indicator-s">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>`;
+    chatArea.appendChild(row);
+    return row;
+  }
+  function storyProcessMessages(messages, onDone) {
+    let i = 0;
+    isStoryProcessing = true;
+    function next() {
+      if (!isStoryProcessing) return;
+      if (i >= messages.length) { isStoryProcessing = false; onDone(); return; }
+      const msg = messages[i];
+      const delay = msg.delay || 0;
+      if (delay > 0 && msg.type !== 'user') {
+        const t = storyShowTyping(msg.type); storyScroll();
+        setTimeout(() => {
+          t.remove(); storyRenderMessage(msg); storyScroll();
+          i++; setTimeout(next, 180);
+        }, delay);
+      } else {
+        storyRenderMessage(msg); storyScroll();
+        i++; setTimeout(next, msg.type === 'user' ? 400 : 180);
+      }
+    }
+    next();
+  }
+  function storyEvaluateCondition(cond) {
+    const v = gameState[cond.variable];
+    const target = cond.value;
+    switch (cond.operator) {
+      case 'eq': return v === target; case 'neq': return v !== target;
+      case 'gte': return (v||0) >= target; case 'gt': return (v||0) > target;
+      case 'lte': return (v||0) <= target; case 'lt': return (v||0) < target;
+    }
+    return true;
+  }
+  function storyApplyEffect(e) {
+    if (e.operation === 'set') gameState[e.variable] = e.value;
+    else if (e.operation === 'add') gameState[e.variable] = (gameState[e.variable]||0) + e.value;
+    else if (e.operation === 'subtract') gameState[e.variable] = (gameState[e.variable]||0) - e.value;
+    else if (e.operation === 'toggle') gameState[e.variable] = !gameState[e.variable];
+  }
+  function storyShowChoices(choices) {
+    choicesContainer.innerHTML = '';
+    const filtered = (choices || []).filter(c => !c.condition || storyEvaluateCondition(c.condition));
+    if (filtered.length === 0) { choicesContainer.classList.remove('show'); return; }
+    filtered.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = choice.text;
+      btn.addEventListener('click', () => storySelectChoice(choice));
+      choicesContainer.appendChild(btn);
+    });
+    choicesContainer.classList.add('show');
+    requestAnimationFrame(() => {
+      chatArea.style.paddingBottom = choicesContainer.offsetHeight + 'px';
+      storyScroll();
+    });
+  }
+  function storySelectChoice(choice) {
+    if (choice.effects) choice.effects.forEach(storyApplyEffect);
+    storyUpdateMeter();
+    choicesContainer.classList.remove('show');
+    choicesContainer.innerHTML = '';
+    chatArea.style.paddingBottom = '';
+    storyEnterScene(choice.nextScene);
+  }
+  function storyEnterScene(sceneId) {
+    const scene = STORY_SCENES[sceneId];
+    if (!scene) return;
+    if (scene.onEnter) { scene.onEnter.forEach(storyApplyEffect); storyUpdateMeter(); }
+    choicesContainer.classList.remove('show');
+    choicesContainer.innerHTML = '';
+    chatArea.style.paddingBottom = '';
+    storyProcessMessages(scene.messages, () => {
+      if (scene.ending) setTimeout(() => storyShowEnding(scene.ending), 700);
+      else storyShowChoices(scene.choices);
+    });
+  }
+  function storyShowEnding(type) {
+    const icons = { good:'✦', bad:'✕', neutral:'—' };
+    const labels = { good:'관계 시작', bad:'인연 놓침', neutral:'다음 기약' };
+    const subs = {
+      good: `${storyChar.name}과의 관계가 시작됐어요. 내일 첫 번째 대화를 이어갈 수 있어요.`,
+      bad:  `${storyChar.name}에게서 더 이상 연락이 오지 않을 것 같아요.`,
+      neutral: '오늘은 여기까지. 다음에 다시 얘기할 수 있어요.'
+    };
+    document.getElementById('endingIcon').className = `ending-icon ${type}`;
+    document.getElementById('endingIcon').textContent = icons[type];
+    document.getElementById('endingTitle').className = `ending-title ${type}`;
+    document.getElementById('endingTitle').textContent = labels[type];
+    document.getElementById('endingSub').textContent = subs[type];
+    endingOverlay.classList.add('visible');
+  }
+
+  // ── Transition: 온보딩 → 연결중 → 스토리 ──
+  function startStoryFor(deficit) {
+    const c = CHARACTERS[deficit];
+    if (!c) return;
+    storyChar = { ...c, deficit };
+
+    // connecting overlay with selected character video
+    connVideo.src = VIDEOS[c.v];
+    connTitle.textContent = `${c.name}과 연결 중...`;
+    connOverlay.classList.add('show');
+
+    setTimeout(() => {
+      // populate story header
+      chAvatarVideo.src = VIDEOS[c.v];
+      chName.textContent = c.name;
+      chAge.textContent = c.age;
+
+      // hide onboarding, show story
+      obUI.classList.add('hidden');
+      storyUI.classList.remove('hidden');
+
+      setTimeout(() => {
+        connOverlay.classList.remove('show');
+
+        // reset story state + start scene
+        chatArea.innerHTML = '';
+        choicesContainer.innerHTML = '';
+        choicesContainer.classList.remove('show');
+        endingOverlay.classList.remove('visible');
+        gameState = { affection: 0, opennessShown: false, gotNumber: false };
+        lastPartnerTag = null;
+        storyUpdateMeter();
+        storyEnterScene('opening');
+      }, 250);
+    }, 1600);
+  }
+
+  // Back / restart / endings
+  document.getElementById('storyBack').addEventListener('click', backToOnboarding);
+  document.getElementById('endingContinue').addEventListener('click', backToOnboarding);
+  document.getElementById('endingRestart').addEventListener('click', () => {
+    if (!storyChar) return;
+    chatArea.innerHTML = '';
+    choicesContainer.innerHTML = '';
+    choicesContainer.classList.remove('show');
+    endingOverlay.classList.remove('visible');
+    gameState = { affection: 0, opennessShown: false, gotNumber: false };
+    lastPartnerTag = null;
+    storyUpdateMeter();
+    storyEnterScene('opening');
+  });
+
+  function backToOnboarding() {
+    storyUI.classList.add('hidden');
+    obUI.classList.remove('hidden');
+    endingOverlay.classList.remove('visible');
+  }
 </script>
 </body>
 </html>
