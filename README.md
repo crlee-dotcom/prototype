@@ -48,8 +48,7 @@ Welcome
 ```
 ui_kits/
 ├── app/
-│   ├── HomeFriends_FlowB_A.html   ← 메인 ✨
-│   └── _archive/                   (이전 버전 · 실험 프로토타입)
+│   └── HomeFriends_FlowB_A.html   ← 메인 ✨ (이것만 열면 됨)
 ├── assets/
 │   ├── seohyun/      유서현 자산 (배경 5 + 영상 6 + 메신저 1)
 │   ├── seoyoon/      이서윤 자산 (22 이미지 — 배경/베이스/변형/구도/사진)
@@ -73,15 +72,8 @@ ui_kits/
 
 영상 경로가 상대 경로라 폴더 구조 그대로 유지해야 정상 재생됩니다.
 
-## 📦 이전 작업 (`app/_archive/`)
-
-실험 프로토타입들 보관용 — 참고만 하세요. 최신 플로우는 위 메인 파일 하나뿐.
-
-- `App.html`, `Home.html`, `Story.html` — 중간 빌드 단계
-- `HomeFriends_FlowA.html`, `HomeFriends_FlowB.html`, `HomeFriends_FlowB_B.html` — 시안 A/B 비교용
-- `HomeTikTok.html`, `HomeStoriesGrid.html`, `HomeVariations.html`, `index.html` — 초기 홈 변형 실험
-- `Onboarding.html` — 초기 결핍+MBTI 진단
-
 ---
 
 *카톡-네이티브 온보딩 · VN 스토리 엔진 · Rizz DS 기반*
+
+> 이전 실험 프로토타입(HomeTikTok, HomeStoriesGrid, Story, App 등)은 git history에서 확인 가능.
